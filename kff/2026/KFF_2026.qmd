@@ -1,0 +1,1368 @@
+---
+title: "KFF 2026"
+subtitle: "Rapport om funn fra KFF"
+author: "Bente Øvrebø"
+date: 1.07.2026
+  html:
+    toc: true
+    toc-depth: 3
+    df-print: paged
+    code-fold: show
+format: html
+editor: visual
+---
+
+# Bearbeiding og resultater fra kommunenes forvaltning av folkehelseloven
+
+# 2025_2026
+
+Denne siden tar for seg bearbeiding av data og resultater fra undersøkelsen om kommunenes forvaltning av folkehelseloven.
+
+```{r setup}
+#| label: setup
+#| message: false
+#| output: false
+library(data.table)
+library(haven)      # lese .dta-filer (Stata-format)
+library(ggplot2)
+library(scales)      # prosentformatering på akser/labels
+library(readxl)
+library(highdir)
+library(dplyr)
+library(labelled)
+library(openxlsx)
+
+options(datatable.print.class = TRUE)
+
+# æøå problematikk:
+Sys.setlocale("LC_ALL", "nb-NO.UTF-8")
+
+```
+
+```{r hjelpefunksjoner}
+#| label: hjelpefunksjoner
+
+
+# Tabell med frekvens + prosent (funksjonen tar med missing)
+freq_table <- function(x, useNA = "ifany") {
+  tab <- table(x, useNA = useNA)
+  data.table(
+    verdi   = names(tab),
+    n       = as.integer(tab),
+    prosent = round(100 * as.integer(tab) / sum(tab), 1)
+  )
+}
+
+# krysstabell med radprosent (funksjonen tar med missing?)
+crosstab_row <- function(data, rowvar, colvar) {
+  tab <- data[, .N, by = c(rowvar, colvar)] # teller observasjoner
+  tab[, prosent := round(100 * N / sum(N), 1), by = rowvar] # beregner prosent
+  setorderv(tab, c(rowvar, colvar)) # sorterer tabellen
+  tab[]
+}
+
+# Tilsvarer: krysstabell med kolonneprosent (funksjonen tar med missing?)
+crosstab_col <- function(data, rowvar, colvar) {
+  tab <- data[, .N, by = c(rowvar, colvar)]
+  tab[, prosent := round(100 * N / sum(N), 1), by = colvar]
+  setorderv(tab, c(rowvar, colvar))
+  tab[]
+}
+
+```
+
+# Import av kommuneinfo for 2026
+
+Basis for kommuneinfo er fila som er sendt til Opinion som gjennomfører undersøkelsen på vegne av Hdir.
+
+```{r kommuner}
+#| label: kommuner
+#| output: false
+
+# I denne koden lages dataset med kommuneinfo, inklu kommunens fylke, landsdel, størrelse og sentralitet.
+
+# 2026 kommuner
+kommuneer2026 <- as.data.table(
+  read_xlsx("O:/Prosjekt/Rusdata/Kommunenes forvaltning/Folkehelsearbeid/Folkehelse_2025_2026/Kommuneinfo2026.xlsx")
+)
+setnames(kommuneer2026, "Kommunenummer2026", "kommunenummer")
+
+# Lag fylkesvariabel i kommunefila:
+  kommuneer2026[, kommunenummer4 := sprintf("%04d", as.integer(kommunenummer))]
+  
+  fylke_labels <- c(
+    "03" = "Oslo - Oslove",
+    "11" = "Rogaland",
+    "15" = "Møre og Romsdal",
+    "18" = "Nordland - Nordlánnda",
+    "31" = "Østfold",
+    "32" = "Akershus",
+    "33" = "Buskerud",
+    "34" = "Innlandet",
+    "39" = "Vestfold",
+    "40" = "Telemark",
+    "42" = "Agder",
+    "46" = "Vestland",
+    "50" = "Trøndelag - Trööndelage",
+    "55" = "Troms - Romsa - Tromssa",
+    "56" = "Finnmark - Finnmárku - Finmarkku"
+  )
+  
+  kommuneer2026[, fylke := fylke_labels[substr(kommunenummer4, 1, 2)]]
+
+# Lag variabel med landsdel:
+  kommuneer2026[, landsdel := fcase(
+  fylke %in% c("Oslo - Oslove", "Akershus"),                                                 1L,
+  fylke %in% c("Innlandet", "Østfold", "Buskerud", "Vestfold", "Telemark"),          2L,
+  fylke %in% c("Agder", "Rogaland"),                                                 3L,
+  fylke %in% c("Vestland", "Møre og Romsdal"),                                       4L,
+  fylke == "Trøndelag - Trööndelage",                                                5L,
+  fylke %in% c("Nordland - Nordlánnda", "Troms - Romsa - Tromssa",
+               "Finnmark - Finnmárku - Finmarkku"),                                  6L
+  )]
+  
+  kommuneer2026[, landsdel := factor(landsdel, levels = 1:6, labels = c(
+    "Oslo og Akershus", "Østlandet ellers", "Agder og Rogaland",
+    "Vestlandet", "Trøndelag", "Nord-Norge"
+  ))]
+
+## Befolkningstall for kommuner:
+  
+  # fila er lastet ned fra folkehelsestatistikkbanken:
+  # https://statistikk.fhi.no/nokkel/iIALHYpjwwxCYECV9iAnanUAYXxFBhFZdQW1M7T5EeA?GEO=0301,3101,3103,3105,3107,3110,3112,3114,3116,3118,3120,3122,3124,3201,3203,3205,3207,3209,3212,3214,3216,3218,3220,3222,3224,3226,3228,3230,3232,3234,3236,3238,3240,3242,3301,3303,3305,3310,3312,3314,3316,3318,3320,3322,3324,3326,3328,3330,3332,3334,3336,3338,3401,3403,3405,3407,3411,3412,3413,3414,3415,3416,3417,3418,3419,3420,3421,3422,3423,3424,3425,3426,3427,3428,3429,3430,3431,3432,3433,3434,3435,3436,3437,3438,3439,3440,3441,3442,3443,3446,3447,3448,3449,3450,3451,3452,3453,3454,3901,3903,3905,3907,3909,3911,4001,4003,4005,4010,4012,4014,4016,4018,4020,4022,4024,4026,4028,4030,4032,4034,4036,4201,4202,4203,4204,4205,4206,4207,4211,4212,4213,4214,4215,4216,4217,4218,4219,4220,4221,4222,4223,4224,4225,4226,4227,4228,1101,1103,1106,1108,1111,1112,1114,1119,1120,1121,1122,1124,1127,1130,1133,1134,1135,1144,1145,1146,1149,1151,1160,4601,4602,4611,4612,4613,4614,4615,4616,4617,4618,4619,4620,4621,4622,4623,4624,4625,4626,4627,4628,4629,4630,4631,4632,4633,4634,4635,4636,4637,4638,4639,4640,4641,4642,4643,4644,4645,4646,4647,4648,4649,4650,4651,1505,1506,1508,1511,1514,1515,1516,1517,1520,1525,1528,1531,1532,1535,1539,1547,1554,1557,1560,1563,1566,1573,1576,1577,1578,1579,1580,5001,5006,5007,5014,5020,5021,5022,5025,5026,5027,5028,5029,5031,5032,5033,5034,5035,5036,5037,5038,5041,5042,5043,5044,5045,5046,5047,5049,5052,5053,5054,5055,5056,5057,5058,5059,5060,5061,1804,1806,1811,1812,1813,1815,1816,1818,1820,1822,1824,1825,1826,1827,1828,1832,1833,1834,1835,1836,1837,1838,1839,1840,1841,1845,1848,1851,1853,1856,1857,1859,1860,1865,1866,1867,1868,1870,1871,1874,1875,5501,5503,5510,5512,5514,5516,5518,5520,5522,5524,5526,5528,5530,5532,5534,5536,5538,5540,5542,5544,5546,5601,5603,5605,5607,5610,5612,5614,5616,5618,5620,5622,5624,5626,5628,5630,5632,5634,5636&AAR=2021_2021,2022_2022,2023_2023,2024_2024,2025_2025,2026_2026&KJONN=0&ALDER=0_120&MEASURE_TYPE=TELLER
+  
+  # har manuelt endre befolkningsfil så den har riktig navn på kommuner som bruker "š":
+  
+  befolkning2026 <- as.data.table(
+    read_xlsx("O:/Prosjekt/Rusdata/Kommunenes forvaltning/Folkehelsearbeid/Folkehelse_2025_2026/Folketall_2026.xlsx")
+  )
+  
+  setnames(befolkning2026, "...1", "Kommunenavn2026") 
+  setnames(befolkning2026, "2026", "folketall2026") 
+  
+  kommuneinfo <- full_join(kommuneer2026, befolkning2026, by = "Kommunenavn2026")
+
+
+# Klassiferer kommunestørrelse etter innbyggertall i henhold til SSB: https://www.ssb.no/klass/klassifikasjoner/115/koder
+
+kommuneinfo[, liten := cut(
+  folketall2026,
+  breaks = c(-Inf, 5000, 20000, Inf),
+  right = FALSE,
+  labels = c(
+  "<5000 innbyggere",
+  "5000-20000 innbyggere",
+  ">=20000 innbyggere"
+  )
+)]
+
+# Sentralitet (høy til lav) fra SSB: https://www.ssb.no/klass/klassifikasjoner/128/korrespondanser/1417
+  # Sentralitetsindeksen måler hvor lett innbyggerne i en kommune har tilgang til arbeidsplasser og et bredt spekter av tjenester gjennom veinettet.
+
+  fil <- "O:/Prosjekt/Rusdata/Kommunenes forvaltning/Folkehelsearbeid/Folkehelse_2025_2026/Sentralitet2020.csv"
+  sentralitet2020 <- fread(
+    fil,
+    sep = ";",
+    encoding = "Latin-1"
+  )
+  
+  setnames(sentralitet2020, "targetCode", "kommunenummer")
+  setnames(sentralitet2020, "sourceCode", "sentralitetsnr")
+  setnames(sentralitet2020, "sourceName", "sentralitetnavn")
+
+kommuneinfo[, kommunenummer := as.integer(kommunenummer)]
+sentralitet2020[, kommunenummer := as.integer(kommunenummer)]
+
+# Koble på sentralitetvariabler til datasett 
+
+  kommuneinfo <- merge(
+  kommuneinfo,
+  sentralitet2020[, .(
+   kommunenummer,
+   sentralitetsnr,
+  sentralitetnavn
+  )],
+  by = "kommunenummer",
+  all.x = TRUE,
+  sort = FALSE
+  )
+  
+# Fjerne overflødig dt-filer:
+  rm(befolkning2026, sentralitet2020)
+
+
+```
+
+# 1. Import av KFF-datasett 2026
+
+```{r import}
+#| label: import
+#| output: false
+
+dtx <- as.data.table(
+  read_sav("O:/Prosjekt/Rusdata/Kommunenes forvaltning/Folkehelsearbeid/Folkehelse_2025_2026/Folkehelseloven_1009.sav")
+)
+
+setnames(dtx, "kommuneid", "kommunenummer")
+dtx[, c("s_5_1", "s_5_2", "s_5_3") := NULL] # Fjerner personinformasjon
+
+```
+
+# 2. Svarprosent-kobling og info
+
+```{r rens}
+#| label: rens
+#| output: false
+
+setDT(kommuneinfo)
+setDT(dtx)
+
+# Sørg for samme datatype i begge datasett.
+# Kommunenummer bør vanligvis lagres som tekst.
+kommuneinfo[, kommunenummer := as.character(kommunenummer)]
+dtx[, kommunenummer := as.character(kommunenummer)]
+
+# Lag svarvariabel:
+# 1 = Ja, finnes i dtx
+# 2 = Nei, finnes ikke i dtx
+kommuneinfo[, svar := fifelse(
+  kommunenummer %chin% dtx$kommunenummer,
+  1L,
+  2L
+)]
+
+# Legger på label og gjør den til faktor:
+kommuneinfo[, svar := factor(
+  svar,
+  levels = c(1, 2),
+  labels = c("Ja", "Nei")
+)]
+
+# Lagre kommuninfo som excel-fil i mappe: 
+write.xlsx(
+  kommuneinfo,
+  file = "O:/Prosjekt/Rusdata/Kommunenes forvaltning/Folkehelsearbeid/Folkehelse_2025_2026/kommuneinfo.xlsx",
+  overwrite = TRUE
+)
+  
+
+```
+
+## Kode med oversikt over beskrivelse av datasett:
+
+```{r}
+#| output: false
+
+# Variablene det skal lages oversikt for
+  beskriv_datasett <- function(dt, n_eksempler = 5) {
+  
+    cat("ANTALL OBSERVASJONER:", nrow(dt), "\n")
+    cat("ANTALL VARIABLER:", ncol(dt), "\n\n")
+  
+    oversikt <- data.table(
+      variabel = names(dt),
+      klasse = sapply(dt, function(x) class(x)[1]),
+      mangler = sapply(dt, function(x) sum(is.na(x))),
+      unike = sapply(dt, uniqueN)
+    )
+  
+    print(oversikt)
+  
+    cat("\n\nEKSEMPELVERDIER:\n\n")
+  
+    for (v in names(dt)) {
+      cat("\n---", v, "---\n")
+      print(head(unique(dt[[v]]), n_eksempler))
+    }
+  }
+  
+  beskriv_datasett(kommuneinfo)
+
+
+```
+
+# Svar-info med eksport til excel.
+
+```{r}
+
+lag_svartabell <- function(dt, variabler) {
+
+  rbindlist(lapply(variabler, function(v) {
+
+    tmp <- dt[
+      ,
+      .N,
+      by = c(v, "svar")
+    ]
+
+    tmp <- dcast(
+      tmp,
+      formula = paste(v, "~ svar"),
+      value.var = "N",
+      fill = 0
+    )
+
+    if (!"Ja" %in% names(tmp)) tmp[, Ja := 0]
+    if (!"Nei" %in% names(tmp)) tmp[, Nei := 0]
+
+    tmp[
+      ,
+      `:=`(
+        Sum = Ja + Nei,
+        Andel_Ja = round(100 * Ja / (Ja + Nei), 1)
+      )
+    ]
+
+    setnames(tmp, v, "Gruppe")
+
+    tmp[
+      ,
+      Variabel := v
+    ]
+
+    tmp[
+      ,
+      .(Variabel, Gruppe, Ja, Nei, Sum, Andel_Ja)
+    ]
+  }))
+}
+
+oversikt <- lag_svartabell(
+  kommuneinfo,
+  c("fylke", "landsdel", "liten", "sentralitetnavn")
+)
+
+oversikt
+
+## Ja,svar:
+
+svarandel <- rbindlist(lapply(
+  c("fylke", "landsdel", "liten", "sentralitetnavn"),
+  function(v) {
+
+    kommuneinfo[
+      ,
+      .(
+        Antall = .N,
+        Svarandel = round(
+          100 * mean(svar == "Ja"),
+          1
+        )
+      ),
+      by = v
+    ][
+      ,
+      Variabel := v
+    ]
+  }
+))
+
+
+
+## Landsdel og størrelse:
+tab_kombi <- kommuneinfo[
+  ,
+  .(
+    Antall = .N,
+    Ja = sum(svar == "Ja"),
+    Svarandel = round(
+      100 * mean(svar == "Ja"),
+      1
+    )
+  ),
+  by = .(landsdel, liten)
+]
+
+tab_kombi
+
+## Publiseringsvennlig tabell: 
+
+tab_rapport <- kommuneinfo[
+  ,
+  .(
+    Antall = .N,
+    Svar = sum(svar == "Ja"),
+    Svarandel = round(
+      100 * mean(svar == "Ja"),
+      1
+    )
+  ),
+  by = .(landsdel, liten)
+][order(landsdel, liten)]
+
+library(openxlsx)
+
+write.xlsx(
+  list(
+    Oversikt = oversikt,
+    Landsdel_storrelse = tab_kombi
+  ),
+  "O:/Prosjekt/Rusdata/Kommunenes forvaltning/Folkehelsearbeid/Folkehelse_2025_2026/svarprosent_kommuneundersokelse.xlsx",
+  overwrite = TRUE
+)
+
+```
+
+# 3. Svarprosent og representativitet
+
+Svarprosent:
+
+`r freq_table(kommuneinfo$svar)`
+
+## Hvilke kommuner har ikke svart?
+
+### Fylke
+
+`r freq_table(test[svar == "Nei", fylke])` \### Landsdel `r freq_table(kommuneinfo[svar == "Nei", landsdel])`
+
+```{r merge-kommuner}
+#| label: merge-kommuner og datafil
+
+################################
+# Statistikk ifm svarprosent
+################################
+
+# Antall kommuner som ikke har svart 2024_2025:
+
+
+# Svarprosent
+freq_table(kommuneinfo$svar)
+crosstab_row(kommuneinfo, "fylke")
+
+# Svar etter fylke
+freq_table(test[svar == "Nei", fylke])
+freq_table(kommuneinfo[svar == "Ja", fylke])
+crosstab_row(kommuneinfo, "fylke", "svar")
+# svar etter landsdel
+freq_table(kommuneinfo[svar == "Nei", landsdel])
+freq_table(kommuneinfo[svar == "Ja", landsdel])
+crosstab_row(kommuneinfo, "landsdel", "svar")
+# svar etter kommunestørrelse
+freq_table(test[svar == "Nei", liten])
+freq_table(test[svar == "Ja", liten])
+crosstab_row(kommuneinfo, "liten", "svar")
+# Svar etter sentralitet
+freq_table(test[svar == "Nei", sentralitetnavn])
+freq_table(test[svar == "Ja", sentralitetnavn])
+crosstab_row(kommuneinfo, "sentralitetnavn", "svar")
+
+
+
+```
+
+# Kobler kommuneinfo til datafila KFF
+
+```{r }
+# DEtte er en full join, altså at vi nå får inn rader for de som ikke har svart i dtx:
+
+dtx <- merge(dtx, kommuneinfo, by = "kommunenummer", all = TRUE, allow.cartesian = TRUE)
+
+dir.create("O:/Prosjekt/Rusdata/Kommunenes forvaltning/Folkehelsearbeid/Folkehelse_2025_2026/data", showWarnings = FALSE)
+
+saveRDS(
+dtx,
+"O:/Prosjekt/Rusdata/Kommunenes forvaltning/Folkehelsearbeid/Folkehelse_2025_2026/data/kff_2026.rds"
+)
+
+```
+
+# TIL folkehelsekonferanse
+
+```{r statistikk}
+#| label: statstikk
+
+# Svarprosent
+
+# freq_table(dtx$) # Fyll inn mulig variabel som sier noe om svarprosent
+
+# Hvem har svart:
+
+freq_table(dtx$s_1)   # 1 (kommuneadmin) / 2 tjenestenivå 
+freq_table(dtx$s_2)   # tittel
+freq_table(dtx$s_3)   # sektortilknytning       
+
+
+
+# Ivaretar kommunen kravet til oversikt over helsetilstanden i kommunen og faktorer som påvirker denne?
+  freq_table(dtx$q16b)  
+  krav <- data.table(svar = dtx$q16b)
+  # Behold kun gyldige svar (1, 2, 3)
+  tab <- krav[svar %in% c(1, 2, 3),
+  .N,
+  by = svar][order(svar)]
+  # Etiketter
+  tab[, svartekst := c("Ja", "Nei", "Vet ikke")]
+  # Antall som har svart 1, 2 eller 3
+  N_tot <- sum(tab$N)
+  
+  tab[, prosent := round(100 * N / sum(N), 1)]
+  tab[, label := paste0(prosent, "%")]
+
+  tab
+  
+    # Figure data specification 
+  spec_pie <- hd_spec(tab,
+      x    = "svartekst",
+      y    = "N"
+  )
+  
+  opts_pie <- hd_opts(
+      title = "Ivaretar kommunen krav til oversikt over heletilstanden?",
+      subtitle = "Kilde: KFF",
+      ylab = "N"
+  )
+  
+  hd_make(spec_pie, "pie", opts_pie, mode = "static")
+  
+  hd(tab, x = "svartekst", y = "N", backend = "static") +
+    hd_geom_pie() +
+    hd_opts(
+        title = "Ivaretar kommunen krav til oversikt over heletilstanden?",
+        subtitle = "Kilde: KFF"
+    )
+  
+
+# Antall kommuner med oversiktsdokument over helsetilstanden
+
+freq_table(dtx$q16)
+dtx[q16 == 10, kommunenummer] # Endre til variabel med kommunenavn
+
+# Hvilke deler av kommunen er involvert i arbeidet med oversiktsdokumentet? (flere svar mulig)
+  # Kun de som har svart 1-9 på oversiktsdokument
+
+s16_vars <- c(
+  s_16_1  = "Samfunnsmedisinsk",
+  s_16_2  = "Plan og bygning",
+  s_16_3  = "Samfunn-/byutvikling",
+  s_16_4  = "Helse og omsorg",
+  s_16_15 = "Velferd, arbeid og integrering",
+  s_16_5  = "Miljø og klima",
+  s_16_6  = "Kultur og frivillighet",
+  s_16_8  = "Næring",
+  s_16_9  = "Utdanning",
+  s_16_10 = "Barnehage",
+  s_16_11 = "Eiendom",
+  s_16_12 = "Miljøteknisk",
+  s_16_13 = "Annet"
+)
+
+# Frekvens for hver enkeltvariabel (tilsvarer 13 x "tab s_16_x")
+s16_freq <- rbindlist(lapply(names(s16_vars), function(v) {
+  cbind(variabel = s16_vars[[v]], freq_table(dtx[[v]]))
+}))
+
+s16_freq # Gir tabell med alle svar etter 0,1 og NA.
+
+
+# Samarbeider kommunen med andre kommuner om det systematiske folkehelsearbeidet, tilsyn, beredskap og/eller kommuneoverlegefunksjonen slik det følger av loven? Ja/nei
+freq_table(dtx$q2_1)
+
+# hos de som har svart ja (1) på det over, på hvilke områder samarbeides det om?
+  # Samarbeid om folkehelsearbeidet
+  freq_table(dtx$q2_2_1) 
+  # samarbeid om tilsyn
+  freq_table(dtx$q2_2_2) 
+  #samarbeid om beredskap
+  freq_table(dtx$q2_2_3) 
+  # samarbeid om kommuneoverlegefunksjonen
+  freq_table(dtx$q2_2_4) 
+  
+# Variabel som sier antall kommuner som sammarbeider om 1 - 2 - 3 - 4 av punktene.
+    # Hvis alle 4 == NA, blir total NA. 
+  
+  vars <- c("q2_2_1", "q2_2_2", "q2_2_3", "q2_2_4")
+
+dtx[, q2_1_tot := fifelse(
+  rowSums(!is.na(.SD)) == 0,
+  NA_real_,
+  rowSums(.SD, na.rm = TRUE)
+), .SDcols = vars]
+  
+freq_table(dtx$q2_1_tot) 
+  
+# På hvilke områder har kommunen identifisert sine største folkehelseutfordringer? (inntil 5 kryss, maks to innenfor alternativer markert med *) 	
+  
+  # Navngi utfordringer
+s_7_vars <- c(
+  s_7_1  = "(Konsekvenser av) befolkningssammensetning",
+  s_7_2  = "Aldring av befolkningen",
+  s_7_3  = "Sosioøkonomiske forskjeller i befolkningen",
+  s_7_4  = "Barnehage",
+  s_7_5  = "Skole/utdanning",
+  s_7_6  = "Bolig",
+  s_7_7  = "Tilknytning til arbeidsliv",
+  s_7_8  = "Levekår",
+  s_7_9  = "Områder med opphopning av grupper med levelårsutfordringer",
+  s_7_10 = "Fritidstilbud",
+  s_7_11 = "Klima og miljø",
+  s_7_12 = "Nærmiljø",
+  s_7_13 = "Sosial støtte/deltakelse/mestring",
+  s_7_14 = "Utenforskap/ensomhet",
+  s_7_15 = "Skader",
+  s_7_16 = "Ulykker",
+  s_7_17 = "Tobakksbruk",
+  s_7_18 = "Rusmiddelbruk",
+  s_7_19 = "Ernæring/kosthold",
+  s_7_20 = "Fysisk aktivitet",
+  s_7_21 = "Psykisk helse og livskvalitet*",
+  s_7_22 = "Fysisk helse*",
+  s_7_23 = "Sosial ulikhet i helse*",
+  s_7_24 = "Andre temat",
+  s_7_25 = "Kommunen har ikke identifisert sine største folkehelseutfordringer"
+)
+  
+  
+# Frekvens for hver enkeltvariabel (tilsvarer 13 x "tab s_16_x")
+s_7_freq <- rbindlist(lapply(names(s_7_vars), function(v) {
+  cbind(variabel = s_7_vars[[v]], freq_table(dtx[[v]]))
+}))
+
+s_7_freq # Gir tabell med alle svar etter 0,1
+
+
+
+# På hvilke områder har kommunen prioritert å sette i verk tiltak som følge av å ha identifisert sine største folkehelseutfordringer? (inntil 5 kryss, maks to innenfor alternativer markert med *) 	
+
+  # Navngi tiltak
+s_29_vars <- c(
+  s_29_1  = "Befolkningssammensetning",
+  s_29_2  = "Aldring av befolkningen",
+  s_29_3  = "Sosioøkonomiske forskjeller i befolkningen",
+  s_29_4  = "Barnehage",
+  s_29_5  = "Skole/utdanning",
+  s_29_6  = "Bolig",
+  s_29_7  = "Tilknytning til arbeidsliv",
+  s_29_8  = "Levekår",
+  s_29_9  = "Områder med opphopning av grupper med levelårsutfordringer",
+  s_29_10 = "Fritidstilbud",
+  s_29_11 = "Klima og miljø",
+  s_29_12 = "Nærmiljø",
+  s_29_13 = "Sosial støtte/deltakelse/mestring",
+  s_29_14 = "Utenforskap/ensomhet",
+  s_29_15 = "Skader",
+  s_29_16 = "Ulykker",
+  s_29_17 = "Tobakksbruk",
+  s_29_18 = "Rusmiddelbruk",
+  s_29_19 = "Ernæring/kosthold",
+  s_29_20 = "Fysisk aktivitet",
+  s_29_21 = "Psykisk helse og livskvalitet*",
+  s_29_22 = "Fysisk helse*",
+  s_29_23 = "Sosial ulikhet i helse*",
+  s_29_24 = "Andre temat",
+  s_29_25 = "Kommunen har ikke prioritert å sette i verk tiltak som følge av dette"
+)
+  
+  
+# Frekvens for hver enkeltvariabel (tilsvarer 13 x "tab s_16_x")
+s_29_freq <- rbindlist(lapply(names(s_29_vars), function(v) {
+  cbind(variabel = s_29_vars[[v]], freq_table(dtx[[v]]))
+}))
+
+s_29_freq # Gir tabell med alle svar etter 0,1 
+
+  
+# Har kommunen drøftet identifiserte hovedutfordringer og hvordan disse kan møtes (jf. spørsmål om "kommunen identifisert sine største folkehelseutfordringer") i arbeidet med kommunal planstrategi?
+  freq_table(dtx$q18) # ja (1), nei (2), vet ikke (3)
+  
+  # Blant de som svarte ja over, Har identifiserte hovedutfordringer på folkehelseområdet (jf. spørsmål om "kommunen identifisert sine største folkehelseutfordringer") påvirket hvilke planer kommunen skal prioritere eller utarbeide i inneværende kommunestyreperiode for å møte disse utfordringene? 
+   freq_table(dtx$q19) # ja (1), nei (2), vet ikke (3)
+  
+    # Er kommunen oppmerksom på særskilte folkehelseutfordringer i den samiske befolkningen, jf. § 4 syvende ledd? 
+    freq_table(dtx$q23_1)
+     
+  # I hvilke planer har kommunen fastsatt mål og strategier som svar på folkehelseutfordringene fra oversiktsdokumentet? (Flere kryss er mulig) 
+
+q20_vars <- c(
+  q20_1  = "Kommuneplanens samfunnsdel",
+  q20_2  = "Kommuneplanens arealdel",
+  q20_3  = "Økonomiplan/Handlingsprogram",
+  q20_4  = "Planer for oppvekst",
+  q20_5  = "Planer for utdanning",
+  q20_6  = "Planer for byutvikling/nærmiljøutvikling/areal",
+  q20_7  = "Planer innen helse/sosial",
+  q20_8  = "Planer for miljø og klima",
+  q20_9  = "Planer for kultur",
+  q20_10 = "Planer for frivillighet",
+  q20_11 = "Planer for næringsutvikling",
+  q20_12 = "Egen plan for folkehelse",
+  q20_13 = "Forebyggende plan i barnevernsloven",
+  q20_14 = "Alkoholpolitisk handlingsplan",
+  q20_15 = "Andre temaområder",
+  q20_16 = "Ingen av disse"
+)
+
+q20_freq <- rbindlist(lapply(names(q20_vars), function(v) {
+  cbind(variabel = q20_vars[[v]], freq_table(dtx[[v]]))
+}))
+q20_freq
+
+   
+# Har kommunen gjennomgått og vurdert sitt arbeid med folkehelse i 4-årsperioden?
+  freq_table(dtx$q21) # ja (1), nei (2), vet ikke (3)
+  
+  crosstab_row(dtx, "landsdel", "q21")
+  
+  
+#  Hva er barrierene/utfordringene for et systematisk folkehelsearbeid (flere kryss mulig)
+
+q10a_vars <- c(
+  q10a_1  = "Organisering og samordning av arbeidet",
+  q10a_2  = "Forankring av arbeidet",
+  q10a_3  = "Kapasitet og ressurser (personell) til arbeidet",
+  q10a_4  = "Kompetanse inn i arbeidet",
+  q10a_5  = "Prioritering fra ledelsen",
+  q10a_6  = "Annet"
+)
+
+q10a_freq <- rbindlist(lapply(names(q10a_vars), function(v) {
+  cbind(variabel = q10a_vars[[v]], freq_table(dtx[[v]]))
+}))
+q10a_freq
+  
+#  Hva er barrierene/utfordringene for å jobbe kunnskapsbasert og langsiktig i folkehelsearbeidet (flere kryss mulig)
+
+q10b_vars <- c(
+  q10b_1  = "Organisering og samordning av arbeidet",
+  q10b_2  = "Forankring av arbeidet",
+  q10b_3  = "Kapasitet og ressurser (personell) til arbeidet",
+  q10b_4  = "Kompetanse inn i arbeidet",
+  q10b_5  = "Prioritering fra ledelsen",
+  q10b_6  = "Annet"
+)
+
+q10b_freq <- rbindlist(lapply(names(q10b_vars), function(v) {
+  cbind(variabel = q10b_vars[[v]], freq_table(dtx[[v]]))
+}))
+q10b_freq
+
+
+
+```
+
+# 3. Kobling til SSB-kommunedata (befolkning)
+
+```{r merge-befolkning}
+#| label: merge-befolkning
+bef_path <- "O:/Prosjekt/Rusdata/Kommunenes forvaltning/Kommuner/befolkning2023-2024.dta"
+bef <- as.data.table(read_dta(bef_path))
+
+setnames(bef, "kommunenummer2025", "kommunenummer")
+
+dt <- merge(dt, bef, by = "kommunenummer", all = TRUE, allow.cartesian = TRUE)
+```
+
+Samme logikk som over, men nå kobles på `kommunenummer` (variabelen som kom inn fra forrige kobling).
+
+## Rydding og navnsetting etter kobling
+
+```{r opprydding}
+#| label: opprydding
+# setattr(dt$b2023, "label", "befolkning 2023")
+# setattr(dt$b2024, "label", "befolkning 2024")
+# setattr(dt$b2025, "label", "befolkning 2025")
+
+# setnames(dt, "kommunenummer2025", "kommunenummer")
+# setattr(dt$kommunenummer, "label", "kommunenummer SSB 2025")
+
+# dt[, c("A", "E", "bkommunenummer", "bkommune", "oldname", "b2023") := NULL]
+
+setcolorder(dt, c("kommune.x", "kommunenummer"))
+setorder(dt, kommunenummer)
+```
+
+- `label variable x "tekst"` → data.table har ingen innebygd variabel-label, men vi kan sette samme slags attributt manuelt med `setattr(dt$x, "label", "tekst")` (dette er det haven/Stata-filer bruker internt, så det er konsistent med resten av datasettet, og fungerer f.eks. med `labelled::var_label()` senere).
+- `order` → `setcolorder()`, `sort` → `setorder()`, begge in place.
+
+# 4. Svar fra kommunen (ja/nei)
+
+```{r svar}
+#| label: svar
+dt[, svar := fifelse(respid == "", 0L, 1L)] # Hvis respid er tom (""), sett svar = 0. Ellers sett svar = 1.
+dt[, svar := factor(svar, levels = c(0, 1), labels = c("nei", "ja"))]
+setattr(dt$svar, "label", "svar fra kommunen nei/ja")
+table(dt$svar)
+round(100 * prop.table(table(dt$svar)), 2) # prosent
+```
+
+`gen ... replace ... replace` er en typisk Stata-måte å bygge en betinget variabel på trinnvis. I R gjør vi det i ett steg med `fifelse()` (data.tables raske, NA-sikre versjon av `ifelse()`), og oversetter `label define/values` til en `factor()` med eksplisitte levels/labels.
+
+# 5. Innbyggerkategori (2025) - ikke gjennomført
+
+```{r befolkning2025}
+#| label: befolkning2025
+# dt[, befolkning2025 := cut(
+#  b2025,
+#  breaks = c(-Inf, 2000, 5000, 10000, 20000, 50000, Inf),
+#  right  = FALSE,                 # intervaller [a, b) -- matcher <2000, 2000-4999 osv.
+#  labels = 1:6
+# )]
+# dt[, befolkning2025 := as.integer(as.character(befolkning2025))]
+```
+
+> ⚠️ Stata-koden setter til slutt `label values befolkning2025 labels3`, men `label define labels3 ...` finnes ikke i denne do-fila — den må være definert et annet sted (trolig i en tidligere fil du kjører før denne). Du må selv legge inn riktige tekst-labels her, f.eks.:
+>
+> ``` r
+> dt[, befolkning2025 := factor(befolkning2025, levels = 1:6, labels = c(
+>   "< 2 000 innbyggere", "2 000-4 999", "5 000-9 999",
+>   "10 000-19 999", "20 000-49 999", ">= 50 000"
+> ))]
+> ```
+
+`cut()` med `right = FALSE` gir nøyaktig de samme grensene som de seks `replace`-linjene i Stata: `[−∞, 2000)`, `[2000, 5000)`, osv.
+
+## Kvalitetssjekk: stemmer innbyggertall besvart med SSB-tall? - ikke gjennomført
+
+```{r sjekk-innbyggertall}
+#| label: sjekk-innbyggertall
+# avvik <- dt[svar == "ja" & s_15 != befolkning2025]
+# table(dt[svar == "ja", s_15])
+
+# dt[, c("s_15") := NULL]
+```
+
+Dette er en ren kvalitetskontroll (ingen ny permanent variabel beholdes i Stata-koden heller — `t` droppes rett etterpå). Ifølge kommentaren i originalen: 7 kommuners egen-rapporterte innbyggertall stemte ikke med SSB-tall (typisk rett over/under en kategorigrense), og én kommune manglet svar — SSB-2025-tallene brukes derfor videre.
+
+# 6. Liten kommune (dikotom/trikotom størrelseskategori) - ikke gjennomført
+
+```{r liten}
+#| label: liten
+# dt[, liten := fcase(
+#  befolkning2025 %in% c(1, 2), 1L,
+#  befolkning2025 %in% c(3, 4), 2L,
+#  befolkning2025 %in% c(5, 6), 3L
+# )]
+# dt[, liten := factor(liten, levels = 1:3, labels = c(
+#   "<5000 innbyggere", "5000-20000 innbyggere", ">= 20000 innbyggere"
+# ))]
+```
+
+`fcase()` er data.tables vektoriserte `CASE WHEN` — mer lesbart enn en kjede av `replace`-linjer, og tryggere enn nøstet `ifelse()` fordi betingelsene evalueres i rekkefølge og stopper ved første treff.
+
+# 7. Fylke (2025)
+
+```{r fylke}
+#| label: fylke
+
+dt[, fylke := as.integer(substr(sprintf("%04d", kommunenummer), 1, 2))]
+
+fylke_labels <- c(
+  "03" = "Oslo - Oslove",
+  "11" = "Rogaland",
+  "15" = "Møre og Romsdal",
+  "18" = "Nordland - Nordlánnda",
+  "31" = "Østfold",
+  "32" = "Akershus",
+  "33" = "Buskerud",
+  "34" = "Innlandet",
+  "39" = "Vestfold",
+  "40" = "Telemark",
+  "42" = "Agder", #
+  "46" = "Vestland",
+  "50" = "Trøndelag - Trööndelage",
+  "55" = "Troms - Romsa - Tromssa",
+  "56" = "Finnmark - Finnmárku - Finmarkku"
+)
+
+dt[, fylke := factor(fylke, levels = as.integer(names(fylke_labels)), labels = fylke_labels)]
+
+table(dt$fylke)
+```
+
+`string(kommunenummer, "%04.0f")` (fyll med ledende nuller til 4 siffer) → `sprintf("%04d", kommunenummer)`. `substr(..., 1, 2)` er identisk i R og Stata. Fylkeskodene defineres som en navngitt vektor og limes rett inn som `factor()`-labels — dette erstatter `label define` + `label values` i ett steg.
+
+# 8. Landsdel (2025)
+
+Kilde: [SSBs klassifikasjon 106](https://www.ssb.no/klass/klassifikasjoner/106)
+
+```{r landsdel}
+#| label: landsdel
+dt[, landsdel := fcase(
+  fylke %in% c("Oslo", "Akershus"),                                                 1L,
+  fylke %in% c("Innlandet", "Østfold", "Buskerud", "Vestfold", "Telemark"),          2L,
+  fylke %in% c("Agder", "Rogaland"),                                                 3L,
+  fylke %in% c("Vestland", "Møre og Romsdal"),                                       4L,
+  fylke == "Trøndelag - Trööndelage",                                                5L,
+  fylke %in% c("Nordland - Nordlánnda", "Troms - Romsa - Tromssa",
+               "Finnmark - Finnmárku - Finmarkku"),                                  6L
+)]
+
+dt[, landsdel := factor(landsdel, levels = 1:6, labels = c(
+  "Oslo og Akershus", "Østlandet ellers", "Agder og Rogaland",
+  "Vestlandet", "Trøndelag", "Nord-Norge"
+))]
+```
+
+Samme `fcase()`-mønster som for `liten`, men her matcher jeg på de allerede tekst-labelte `fylke`-nivåene i stedet for de numeriske kodene, siden `fylke` allerede er konvertert til factor over. (Ønsker du å matche på tallkodene i stedet, bytt til `fylke %in% c(3, 32)` osv. før du gjør `fylke` om til factor.)
+
+# 9. Sentralitet (2024) - ikke gjennomført
+
+Kilde: [SSBs klassifikasjon 128, korrespondanse 2024](https://www.ssb.no/klass/klassifikasjoner/128/versjon/1427/korrespondanser/1417)
+
+```{r merge-sentralitet}
+#| label: merge-sentralitet
+# sentr_path <- "O:/Prosjekt/Rusdata/Kommunenes forvaltning/Kommuner/sentralitet2024.dta"
+# sentr <- as.data.table(read_dta(sentr_path))
+
+# dt <- merge(dt, sentr, by = "kommunenummer", all = TRUE, allow.cartesian = TRUE)
+# dt[, targetname := NULL]
+```
+
+Filen `sentralitet2024.dta` er selv laget fra en CSV (se den utkommenterte Stata-blokken) — det tilsvarende R-steget, om du trenger å regenerere den, er:
+
+```{r sentralitet-import, eval=FALSE}
+#| label: sentralitet-import
+# sentr_csv <- fread("O:/Prosjekt/Rusdata/Kommunenes forvaltning/Kommuner/Sentralitet2024.csv")
+# setnames(sentr_csv, "targetcode", "kommunenummer")
+# sentr_csv[, sentralitet2024 := factor(sourcename)]  # tilsvarer "encode"
+# setattr(sentr_csv$sentralitet2024, "label", "SSBs sentralitetskode 2024")
+# sentr_csv[, c("sourcecode", "sourcename") := NULL]
+# write_dta(sentr_csv, sentr_path)
+```
+
+`encode` i Stata lager en heltallskodet variabel med tekst-labels fra en strengvariabel — det tilsvarer ganske enkelt `factor()` i R.
+
+# 10. Hjelpefunksjoner for frekvens- og krysstabeller
+
+Resten av scriptet i Stata består i stor grad av `tabulate`/`tab`-kommandoer. Jeg lager to gjenbrukbare funksjoner i data.table-stil i stedet for å skrive `table()`-kall om og om igjen:
+
+```{r hjelpefunksjoner}
+#| label: hjelpefunksjoner
+
+# Tabell med frekvens + prosent (funksjonen tar med missing)
+freq_table <- function(x, useNA = "ifany") {
+  tab <- table(x, useNA = useNA)
+  data.table(
+    verdi   = names(tab),
+    n       = as.integer(tab),
+    prosent = round(100 * as.integer(tab) / sum(tab), 1)
+  )
+}
+
+# krysstabell med radprosent (funksjonen tar med missing?)
+crosstab_row <- function(data, rowvar, colvar) {
+  tab <- data[, .N, by = c(rowvar, colvar)] # teller observasjoner
+  tab[, prosent := round(100 * N / sum(N), 1), by = rowvar] # beregner prosent
+  setorderv(tab, c(rowvar, colvar)) # sorterer tabellen
+  tab[]
+}
+
+# Tilsvarer: krysstabell med kolonneprosent (funksjonen tar med missing?)
+crosstab_col <- function(data, rowvar, colvar) {
+  tab <- data[, .N, by = c(rowvar, colvar)]
+  tab[, prosent := round(100 * N / sum(N), 1), by = colvar]
+  setorderv(tab, c(rowvar, colvar))
+  tab[]
+}
+```
+
+# 11. Kommuner som ikke har svart
+
+```{r ikke-svart}
+#| label: ikke-svart
+freq_table(dt$svar)
+dt[svar == "nei", kommune.x] # Kommunenavn som ikke har svart.
+
+# freq_table(dt[svar == "nei", befolkning2025])
+freq_table(dt[svar == "nei", fylke])
+crosstab_row(dt, "fylke", "svar")
+# crosstab_row(dt, "sentralitet", "svar")
+```
+
+# 12. Kommuner som har svart
+
+```{r har-svart}
+#| label: har-svart
+# freq_table(dt[svar == "ja", befolkning2025])
+
+
+```
+
+```{r pie-befolkning}
+#| label: pie-befolkning
+# pie_dt <- dt[svar == "ja", .N, by = befolkning2025]
+# pie_dt[, prosent := N / sum(N)]
+
+# ggplot(pie_dt, aes(x = "", y = N, fill = factor(befolkning2025))) +
+#  geom_col(width = 1) +
+#  coord_polar(theta = "y") +
+#  geom_text(aes(label = percent(prosent, accuracy = 1)),
+#            position = position_stack(vjust = 0.5)) +
+#  labs(title = "Innbyggertall", fill = "Kategori") +
+#  theme_void()
+```
+
+`graph pie ... plabel(_all percent)` → `ggplot2` har ikke et innebygd kakediagram-geom, men mønsteret `geom_col()` + `coord_polar(theta = "y")` er standardmåten å lage det på.
+
+```{r har-svart-2}
+#| label: har-svart-2
+freq_table(dt[svar == "ja", fylke])
+crosstab_row(dt, "fylke", "svar")
+# crosstab_row(dt, "sentralitet", "svar")
+# crosstab_row(dt, "liten", "svar")
+```
+
+# 13. Tittel og sektor blant de som har svart
+
+```{r tittel-sektor}
+#| label: tittel-sektor
+freq_table(dt$s_2)   # tittel/funksjon              # OBS, labels må knyttes på.
+# crosstab_col(dt, "s_2", "liten")
+
+freq_table(dt$s_3)   # sektortilknytning            # OBS, labels må knyttes på.
+# crosstab_col(dt, "s_3", "liten")
+```
+
+De to `graph pie`-blokkene for `s_2` og `s_3` er kommentert ut i originalen (inkludert `graph export` til png), så jeg lar dem stå som kode du kan slå på ved behov, etter samme oppskrift som kakediagrammet over.
+
+# 14. Oversiktsdokument over helsetilstanden (q16)
+
+```{r q16}
+#| label: q16
+freq_table(dt$q16)
+dt[q16 == 10, kommune.x]
+
+```
+
+```{r q16-detalj}
+#| label: q16-detalj
+
+# freq_table(dt[q16 == 10, befolkning2025])
+
+```
+
+FORTSETT HER!
+
+# 15. Hvilke deler av kommunen er involvert i oversiktsarbeidet (s_16\_\*)
+
+```{r s16-oppsett}
+#| label: s16-oppsett
+s16_vars <- c(
+  s_16_1  = "Samfunnsmedisinsk",
+  s_16_2  = "Plan og bygning",
+  s_16_3  = "Samfunn-/byutvikling",
+  s_16_4  = "Helse og velferd",
+  s_16_5  = "Miljø og klima",
+  s_16_6  = "Kultur",
+  s_16_7  = "Frivillighet",
+  s_16_8  = "Næring",
+  s_16_9  = "Utdanning",
+  s_16_10 = "Barnehage",
+  s_16_11 = "Eiendom",
+  s_16_12 = "Miljøteknisk",
+  s_16_13 = "Annet, spesifiser"
+)
+
+# Frekvens for hver enkeltvariabel (tilsvarer 13 x "tab s_16_x")
+s16_freq <- rbindlist(lapply(names(s16_vars), function(v) {
+  cbind(variabel = s16_vars[[v]], freq_table(dt[[v]]))
+}))
+s16_freq
+
+
+# "Annet"
+freq_table(dt$s_16_17)
+# s_16_14_other må hentes fra Excel pga. lange åpne tekstsvar -- se avsnitt om åpne felt nederst.
+```
+
+```{r s16-total}
+#| label: s16-total
+s16_cols <- names(s16_vars)
+dt[, involvert_total := rowSums(.SD, na.rm = TRUE), .SDcols = s16_cols]
+freq_table(dt$involvert_total)
+```
+
+`rowtotal(var1 var2 ...)` → `rowSums(.SD, na.rm = TRUE), .SDcols = c(...)`. `.SD` ("Subset of Data") er data.tables måte å referere til et sett kolonner radvis på; `.SDcols` bestemmer hvilke.
+
+```{r s16-liten}
+#| label: s16-liten
+s16_by_liten <- rbindlist(lapply(names(s16_vars), function(v) {
+  cbind(variabel = s16_vars[[v]], crosstab_row(dt, v, "liten"))
+}))
+s16_by_liten
+```
+
+# 16. Samarbeid med andre kommuner
+
+```{r samarbeid}
+#| label: samarbeid
+freq_table(dt$q2_1)
+crosstab_row(dt, "befolkning2025", "q2_1")
+crosstab_row(dt, "liten", "q2_1")
+
+freq_table(dt$q2_2)
+crosstab_row(dt, "liten", "q2_2")
+```
+
+# 17. Hovedutfordringer kommunene har identifisert (s_7\_\*)
+
+```{r s7-oppsett}
+#| label: s7-oppsett
+s7_grupper <- list(
+  "Befolkning"                              = paste0("s_7_", 1:3),
+  "Oppvekst- og levekårsforhold"             = paste0("s_7_", 4:10),
+  "Fysisk, biologisk, kjemisk og sos. miljø" = paste0("s_7_", 11:14),
+  "Skader og ulykker"                        = paste0("s_7_", 15:16),
+  "Helserelatert atferd"                     = paste0("s_7_", 17:20),
+  "Helsetilstand"                            = paste0("s_7_", 21:23),
+  "Andre tema"                               = "s_7_24",
+  "Ikke identifisert hovedutfordringer"      = "s_7_25"
+)
+
+s7_freq <- rbindlist(lapply(names(s7_grupper), function(g) {
+  vars <- s7_grupper[[g]]
+  rbindlist(lapply(vars, function(v) {
+    cbind(gruppe = g, variabel = v, freq_table(dt[[v]]))
+  }))
+}))
+s7_freq
+```
+
+```{r s7-total}
+#| label: s7-total
+utfordringer_cols <- paste0("s_7_", 1:24)   # s_7_25 (ingen utfordring) holdes utenfor, som i originalen
+dt[, utfordringer_total := rowSums(.SD, na.rm = TRUE), .SDcols = utfordringer_cols]
+dt[, helse_total := rowSums(.SD, na.rm = TRUE), .SDcols = paste0("s_7_", 21:23)]
+
+freq_table(dt$utfordringer_total)
+freq_table(dt$helse_total)
+```
+
+> 🔎 Originalen skriver `egen ... = rowtotal(...)` (Statas syntaks for radvise beregninger — jeg har brukt `rowtotal` som er nærmest `rowSums`), og avslutter deretter med `tab utfordringer_total` og `tab ut_helse_total`. `ut_helse_total` finnes ikke noe sted i fila — det ser ut som en skrivefeil for `helse_total`. Jeg har brukt `helse_total` her; dobbeltsjekk at det er riktig variabel.
+
+# 18. Prioriterte tiltak som følge av utfordringene (s_29\_\*)
+
+```{r s29-oppsett}
+#| label: s29-oppsett
+s29_grupper <- list(
+  "Befolkning"                              = paste0("s_29_", 1:3),
+  "Oppvekst- og levekårsforhold"             = paste0("s_29_", 4:10),
+  "Fysisk, biologisk, kjemisk og sos. miljø" = paste0("s_29_", 11:14),
+  "Skader og ulykker"                        = paste0("s_29_", 15:16),
+  "Helserelatert atferd"                     = paste0("s_29_", 17:20),
+  "Helsetilstand"                            = paste0("s_29_", 21:23),
+  "Andre tema"                               = "s_29_24",
+  "Ikke prioritert tiltak"                   = "s_29_25"
+)
+
+s29_freq <- rbindlist(lapply(names(s29_grupper), function(g) {
+  vars <- s29_grupper[[g]]
+  rbindlist(lapply(vars, function(v) {
+    cbind(gruppe = g, variabel = v, freq_table(dt[[v]]))
+  }))
+}))
+s29_freq
+```
+
+```{r s29-total}
+#| label: s29-total
+tiltak_cols <- paste0("s_29_", 1:24)
+dt[, tiltak_total := rowSums(.SD, na.rm = TRUE), .SDcols = tiltak_cols]
+dt[, til_helse_total := rowSums(.SD, na.rm = TRUE), .SDcols = paste0("s_29_", 21:23)]
+
+freq_table(dt$tiltak_total)
+freq_table(dt$til_helse_total)
+```
+
+> 🔎 Samme kommentar som over: originalen avslutter denne blokken med `tab utfordringer_total` og `tab helse_total` — begge navn fra forrige blokk, ikke `tiltak_total`/`til_helse_total` som nettopp ble laget. Trolig copy-paste fra seksjonen over. Jeg har vist frekvensen for de riktige, nylig opprettede variablene her.
+
+# 19. Planstrategi og planer (q18–q20)
+
+```{r q18-q20}
+#| label: q18-q20
+freq_table(dt$q18)
+crosstab_row(dt, "q18", "liten")
+
+freq_table(dt$q19)   # kun blant de som svarte ja på q18
+
+q20_vars <- c(
+  q20_1  = "Kommuneplanens samfunnsdel",
+  q20_2  = "Kommuneplanens arealdel",
+  q20_3  = "Økonomiplan/Handlingsprogram",
+  q20_4  = "Planer for oppvekst",
+  q20_5  = "Planer for utdanning",
+  q20_6  = "Planer for byutvikling/nærmiljøutvikling/areal",
+  q20_7  = "Planer innen helse/sosial",
+  q20_8  = "Planer for miljø og klima",
+  q20_9  = "Planer for kultur",
+  q20_10 = "Planer for frivillighet",
+  q20_11 = "Planer for næringsutvikling",
+  q20_12 = "Egen plan for folkehelse",
+  q20_13 = "Forebyggende plan (barnevernsloven)",
+  q20_14 = "Alkoholpolitisk handlingsplan",
+  q20_15 = "Andre temaområder",
+  q20_16 = "Ingen av disse"
+)
+
+q20_freq <- rbindlist(lapply(names(q20_vars), function(v) {
+  cbind(variabel = q20_vars[[v]], freq_table(dt[[v]]))
+}))
+q20_freq
+```
+
+# 20. Gjennomgang av folkehelsearbeidet i fireårsperioden (q21)
+
+```{r q21}
+#| label: q21
+freq_table(dt$q21)
+crosstab_row(dt, "fylke", "q21")
+crosstab_row(dt, "landsdel", "q21")
+crosstab_col(dt, "liten", "q21")
+
+freq_table(dt$q21b)     # åpent spørsmål -- se Excel-eksport nederst
+freq_table(dt$q21b_1)
+```
+
+# 21. Behov for støtte og veiledning fra Helsedirektoratet (q29a\_\*)
+
+```{r q29a-oppsett}
+#| label: q29a-oppsett
+q29a_vars <- c(
+  q29a_1  = "Bruk av data i folkehelseprofiler og statistikkbank",
+  q29a_2  = "Innhenting av informasjon fra kommunens tjenester og lokal kunnskap",
+  q29a_3  = "Analyse av innsamlet informasjon",
+  q29a_4  = "Prioritere planoppgaver på folkehelseområdet i planstrategien",
+  q29a_5  = "Forankre folkehelsemål og strategier i kommuneplanens samfunnsdel",
+  q29a_6  = "Følge opp folkehelsemål og strategier i videre planlegging",
+  q29a_7  = "Oversette folkehelsemål til tiltak",
+  q29a_8  = "Utvikling av tiltak",
+  q29a_9  = "Evaluering av tiltak",
+  q29a_10 = "Evaluering av om folkehelsen utvikles i riktig retning",
+  q29a_11 = "Forbedringsområder i kommunens systematiske folkehelsearbeid",
+  q29a_12 = "Helsekonsekvensutredninger (HKU)",
+  q29a_13 = "Sosial ulikhet i helse",
+  q29a_14 = "Annet"
+)
+```
+
+I originalen lager Stata en "kortnavn"-kopi av hver variabel (`gen profiler = q29a_1`, `gen ktjen = q29a_2`, …) bare for å gi den et lesbart navn i output. Det trenger vi ikke i R — `q29a_vars` over gir oss lesbare labels uten å duplisere kolonner.
+
+```{r q29a-frekvens-summary}
+#| label: q29a-frekvens-summary
+q29a_freq <- rbindlist(lapply(names(q29a_vars), function(v) {
+  cbind(variabel = q29a_vars[[v]], freq_table(dt[[v]]))
+}))
+q29a_freq
+
+# Tilsvarer "summarize x if x != ."
+q29a_summary <- rbindlist(lapply(names(q29a_vars), function(v) {
+  x <- dt[[v]]
+  data.table(
+    variabel = q29a_vars[[v]],
+    n        = sum(!is.na(x)),
+    gj.snitt = round(mean(x, na.rm = TRUE), 2),
+    sd       = round(sd(x, na.rm = TRUE), 2),
+    min      = min(x, na.rm = TRUE),
+    max      = max(x, na.rm = TRUE)
+  )
+}))
+q29a_summary
+```
+
+```{r q29a-liten}
+#| label: q29a-liten
+# Tilsvarer "tab liten if x == 4 | x == 5" for hver variabel
+q29a_liten_viktig <- rbindlist(lapply(names(q29a_vars), function(v) {
+  sub <- dt[get(v) %in% c(4, 5)]
+  cbind(variabel = q29a_vars[[v]], freq_table(sub$liten))
+}))
+q29a_liten_viktig
+```
+
+```{r q29a-bar, fig.height=4}
+#| label: q29a-bar
+for (v in names(q29a_vars)) {
+  p <- ggplot(dt[!is.na(get(v))], aes(x = factor(get(v)))) +
+    geom_bar(fill = "#2c7fb8") +
+    labs(title = q29a_vars[[v]], x = NULL, y = "Antall kommuner") +
+    theme_minimal()
+  print(p)
+}
+```
+
+`graph bar, over(x) title(...)` gjentas 14 ganger i originalen med identisk struktur — her kjøres samme `ggplot()`-oppskrift i en for-løkke over alle `q29a_*`-variablene, og hver figur skrives ut med `print()` (nødvendig inni løkker/funksjoner i R, ellers vises ikke plottet).
+
+# 22. Ønsket veiledningsform fra Hdir (q29b\_\*)
+
+```{r q29b}
+#| label: q29b
+q29b_vars <- c(
+  q29b_1 = "Skriftlig materiale på nett (Hdir/forebygging.no)",
+  q29b_2 = "Webinar",
+  q29b_3 = "Digitale kurs",
+  q29b_4 = "Regionale fysiske samlinger",
+  q29b_5 = "Annet"
+)
+
+q29b_freq <- rbindlist(lapply(names(q29b_vars), function(v) {
+  cbind(variabel = q29b_vars[[v]], freq_table(dt[[v]]))
+}))
+q29b_freq
+
+q29b_by_liten <- rbindlist(lapply(names(q29b_vars), function(v) {
+  cbind(variabel = q29b_vars[[v]], crosstab_row(dt, v, "liten"))
+}))
+q29b_by_liten
+
+freq_table(dt$q29b_5_other)  # åpent tekstfelt
+```
+
+# 23. Åpne tekstfelt (må håndteres i Excel)
+
+Flere spørsmål har åpne svarfelt som Stata-koden konsekvent henviser til Excel for (`s_16_14_other`, `q21b`/`q21b_1` delvis, `q22`, `q29b_5_other`, `q29_o`). Disse er frie tekstsvar og egner seg dårlig for `data.table`-basert tabellering — enklest er å eksportere de aktuelle kolonnene direkte:
+
+```{r apne-felt}
+#| label: apne-felt
+apne_felt <- dt[, .(kommune, s_16_14_other, q21b, q22, q29b_5_other)]
+
+fwrite(apne_felt, "apne_svar_folkehelse_2024_2025.csv")
+```
+
+# Oppsummering av strukturelle forskjeller Stata → R/data.table
+
+| Stata | R / data.table |
+|------------------------------------|------------------------------------|
+| `clear all` | Ikke nødvendig — objekter i eget navnerom |
+| `use "fil.dta"` | `as.data.table(read_dta("fil.dta"))` |
+| `destring x, gen(y)` | `y := as.numeric(x)` |
+| `drop x y z` | `dt[, c("x","y","z") := NULL]` |
+| `rename x y` | `setnames(dt, "x", "y")` |
+| `merge 1:m/m:1 key using fil` (uten `keep()`) | `merge(dt1, dt2, by = "key", all = TRUE, allow.cartesian = TRUE)` |
+| `label variable x "..."` | `setattr(dt$x, "label", "...")` |
+| `label define`/`label values` | `factor(x, levels = ..., labels = ...)` |
+| `gen`/`replace`-kjeder | `fifelse()` eller `fcase()` |
+| `egen y = rowtotal(x1-xn)` | `y := rowSums(.SD, na.rm = TRUE), .SDcols = c(x1,...,xn)` |
+| `tabulate`/`tab1 x` | `freq_table(x)` (egendefinert, over) |
+| `tab x y, row/col` | `crosstab_row()`/`crosstab_col()` (egendefinert, over) |
+| `graph pie`/`graph bar` | `ggplot2::geom_col() + coord_polar()` / `geom_bar()` |
+| `encode strvar, gen(x)` | `factor(strvar)` |
+
+## 2024_2026
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
+
+# KFF
+
+## Struktur for filene
+
+### Metadata
+
+Metadata beskriver dataene og inneholder variabelnavn, spørsmålstekst, ev. svaralternativer, kommentarer om endringer fra tidligere år.
+
+### Data
+
+Filene er per år undersøkelsen er gjennomført. Dvs. en fil med navn KFF_2024_2025 er data innhentet i 2025, som handler om 2024. Pga endringer i spørsmål og kommuner foreligger data for hvert å separat.
+
+## 

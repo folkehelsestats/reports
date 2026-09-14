@@ -1,0 +1,784 @@
+---
+title: "Kommunens forvaltning av folkehelseloven 2026"
+subtitle: "Nasjonale resultater fra kommuneundersøkelsen"
+author: "Helsedirektoratet"
+date: last-modified
+lang: nb
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-summary: "Vis kode"
+    embed-resources: true
+    theme: cosmo
+    fig-width: 9
+    fig-height: 5.5
+    df-print: paged
+execute:
+  echo: false
+  warning: false
+  message: false
+  freeze: auto
+params:
+  data_file: "O:/Prosjekt/Rusdata/Kommunenes forvaltning/Folkehelsearbeid/Folkehelse_2025_2026/data/kff_2026.rds"
+  object_name: null
+---
+
+```{r}
+#| label: oppsett
+#| include: false
+
+library(data.table)
+library(ggplot2)
+library(scales)
+library(knitr)
+
+options(scipen = 999, OutDec = ",", knitr.kable.NA = "")
+theme_set(theme_minimal(base_size = 12))
+
+if (!file.exists(params$data_file)) {
+  stop(
+    "Fant ikke datafilen: ", params$data_file,
+    ". Lagre analyseobjektet som data/kff_2026.rds, eller endre params$data_file i YAML."
+  )
+}
+
+x <- readRDS(params$data_file)
+if (!is.null(params$object_name) && is.list(x) && params$object_name %in% names(x)) {
+  x <- x[[params$object_name]]
+}
+dt <- as.data.table(x)
+
+if ("kommunenummer4" %in% names(dt)) {
+  dt[, kommunenummer4 := sprintf("%04s", as.character(kommunenummer4))]
+} else if ("kommunenummer" %in% names(dt)) {
+  dt[, kommunenummer4 := sprintf("%04s", as.character(kommunenummer))]
+}
+
+n_total <- nrow(dt)
+n_kommuner <- if ("kommunenummer4" %in% names(dt)) uniqueN(dt$kommunenummer4) else n_total
+
+var_exists <- function(v) v %in% names(dt)
+
+as_chr <- function(z) {
+  if (inherits(z, "haven_labelled")) {
+    if (!requireNamespace("haven", quietly = TRUE)) {
+      stop("Pakken 'haven' må installeres for å lese labelled-variabler.")
+    }
+    z <- haven::as_factor(z, levels = "labels")
+  }
+  trimws(as.character(z))
+}
+
+normalize_filter <- function(filter, n = nrow(dt)) {
+  if (length(filter) == 1L) filter <- rep(filter, n)
+  if (length(filter) != n) {
+    stop("Filteret har lengde ", length(filter), ", mens datasettet har ", n, " rader.")
+  }
+  filter <- as.logical(filter)
+  filter[is.na(filter)] <- FALSE
+  filter
+}
+
+is_yes <- function(z) {
+  tolower(as_chr(z)) %in% c("1", "ja", "yes", "true", "x", "checked", "valgt")
+}
+
+as_checked <- function(z) {
+  if (is.logical(z)) {
+    z[is.na(z)] <- FALSE
+    return(z)
+  }
+  is_yes(z)
+}
+
+valid_n <- function(v, filter = rep(TRUE, nrow(dt))) {
+  if (!var_exists(v)) return(0L)
+  filter <- normalize_filter(filter)
+  z <- as_chr(dt[[v]])
+  sum(filter & !is.na(z) & z != "")
+}
+
+single_table <- function(
+    v,
+    labels = NULL,
+    filter = rep(TRUE, nrow(dt)),
+    missing = FALSE,
+    denom_text = "kommuner som fikk spørsmålet"
+) {
+  if (!var_exists(v)) {
+    out <- data.table(
+      Svar = "Variabel mangler i data",
+      n = NA_integer_,
+      Prosent = NA_real_
+    )
+    setattr(out, "denom_text", denom_text)
+    setattr(out, "status", "missing_variable")
+    setattr(out, "eligible_n", 0L)
+    return(out)
+  }
+
+  filter <- normalize_filter(filter)
+  eligible_n <- sum(filter)
+  z <- as_chr(dt[[v]])
+  keep <- if (missing) filter else filter & !is.na(z) & z != ""
+  z <- z[keep]
+
+  if (length(z) == 0L) {
+    out <- data.table(
+      Svar = "Ingen gyldige svar i filterpopulasjonen",
+      n = 0L,
+      Prosent = NA_real_
+    )
+    setattr(out, "denom_text", denom_text)
+    setattr(out, "status", "no_valid_answers")
+    setattr(out, "eligible_n", eligible_n)
+    return(out)
+  }
+
+  if (!is.null(labels)) {
+    mapped <- unname(labels[z])
+    unknown <- unique(z[is.na(mapped) & !is.na(z) & z != ""])
+    if (length(unknown) > 0L) {
+      warning("Ukjente koder i variabel ", v, ": ", paste(unknown, collapse = ", "))
+    }
+    z[!is.na(mapped)] <- mapped[!is.na(mapped)]
+  }
+
+  z[is.na(z) | z == ""] <- "Ubesvart"
+  out <- data.table(Svar = z)[, .(n = .N), by = Svar]
+  out[, Prosent := 100 * n / sum(n)]
+  setattr(out, "denom_text", denom_text)
+  setattr(out, "status", "ok")
+  setattr(out, "eligible_n", eligible_n)
+  out[order(-n, Svar)]
+}
+
+multi_table <- function(
+    vars,
+    labels,
+    filter = rep(TRUE, nrow(dt)),
+    denominator = c("eligible", "responded_any")
+) {
+  denominator <- match.arg(denominator)
+  vars <- intersect(vars, names(dt))
+
+  if (!length(vars)) {
+    out <- data.table(
+      variabel = NA_character_,
+      Alternativ = "Ingen forventede variabler funnet",
+      n = NA_integer_,
+      Prosent = NA_real_
+    )
+    setattr(out, "denominator", 0L)
+    setattr(out, "status", "missing_variables")
+    return(out)
+  }
+
+  filter <- normalize_filter(filter)
+  m <- sapply(vars, function(v) as_checked(dt[[v]]))
+  if (is.null(dim(m))) {
+    m <- matrix(m, ncol = 1L, dimnames = list(NULL, vars))
+  }
+
+  eligible <- filter
+  if (denominator == "responded_any") {
+    raw_present <- sapply(vars, function(v) {
+      z <- as_chr(dt[[v]])
+      !is.na(z) & z != ""
+    })
+    if (is.null(dim(raw_present))) raw_present <- matrix(raw_present, ncol = 1L)
+    eligible <- eligible & rowSums(raw_present) > 0
+  }
+
+  den <- sum(eligible)
+  counts <- if (den > 0L) {
+    colSums(m[eligible, , drop = FALSE], na.rm = TRUE)
+  } else {
+    setNames(rep(0L, length(vars)), vars)
+  }
+
+  out <- data.table(
+    variabel = vars,
+    Alternativ = unname(labels[vars]),
+    n = as.integer(counts)
+  )
+
+  out[, Prosent := if (den > 0L) 100 * n / den else rep(NA_real_, .N)]
+  out[is.na(Alternativ) | Alternativ == "", Alternativ := variabel]
+  setattr(out, "denominator", den)
+  setattr(out, "status", if (den > 0L) "ok" else "no_eligible")
+  out[order(-Prosent, Alternativ)]
+}
+
+plot_single <- function(tab, title, subtitle = NULL) {
+  z <- copy(tab)[!is.na(Prosent)]
+  ggplot(z, aes(x = reorder(Svar, Prosent), y = Prosent)) +
+    geom_col(fill = "#0067B9", width = 0.72) +
+    geom_text(
+      aes(label = label_percent(scale = 1, accuracy = 0.1)(Prosent)),
+      hjust = -0.08,
+      size = 3.6
+    ) +
+    coord_flip(clip = "off") +
+    scale_y_continuous(
+      labels = label_percent(scale = 1),
+      expand = expansion(mult = c(0, 0.16))
+    ) +
+    labs(title = title, subtitle = subtitle, x = NULL, y = "Andel") +
+    theme(plot.margin = margin(5.5, 35, 5.5, 5.5))
+}
+
+plot_multi <- function(tab, title, note = "Flere svar mulig") {
+  z <- copy(tab)[!is.na(Prosent)]
+  ggplot(z, aes(x = reorder(Alternativ, Prosent), y = Prosent)) +
+    geom_col(fill = "#0067B9", width = 0.72) +
+    geom_text(
+      aes(label = sprintf("%.1f %% (n=%s)", Prosent, n)),
+      hjust = -0.06,
+      size = 3.4
+    ) +
+    coord_flip(clip = "off") +
+    scale_y_continuous(
+      labels = label_percent(scale = 1),
+      expand = expansion(mult = c(0, 0.23))
+    ) +
+    labs(title = title, subtitle = note, x = NULL, y = "Andel kommuner") +
+    theme(plot.margin = margin(5.5, 75, 5.5, 5.5))
+}
+
+show_table <- function(tab, digits = 1) {
+  z <- copy(tab)
+  if ("Prosent" %in% names(z)) {
+    z[, Prosent := ifelse(
+      is.na(Prosent),
+      "",
+      sprintf(paste0("%.", digits, "f %%"), Prosent)
+    )]
+  }
+  kable(z, align = c("l", rep("r", max(ncol(z) - 1L, 0L))))
+}
+
+report_single <- function(
+    v,
+    title,
+    labels = NULL,
+    filter = rep(TRUE, nrow(dt)),
+    note = NULL
+) {
+  tab <- single_table(v, labels, filter)
+  status <- attr(tab, "status")
+
+  cat("\n\n### ", title, "\n\n", sep = "")
+
+  if (identical(status, "missing_variable")) {
+    cat("> Variabelen `", v, "` finnes ikke i datasettet.\n\n", sep = "")
+    print(show_table(tab))
+    return(invisible(tab))
+  }
+
+  if (identical(status, "no_valid_answers")) {
+    cat("> Ingen gyldige svar finnes i den aktuelle filterpopulasjonen.\n\n")
+    cat("*Antall kommuner i filterpopulasjonen: n = ", attr(tab, "eligible_n"), ".*\n\n", sep = "")
+    return(invisible(tab))
+  }
+
+  print(plot_single(tab, title, note))
+  cat("\n\n")
+  print(show_table(tab))
+  cat("\n\n*Grunnlag: n = ", sum(tab$n, na.rm = TRUE), " gyldige svar.*\n\n", sep = "")
+  invisible(tab)
+}
+
+report_multi <- function(
+    vars,
+    labels,
+    title,
+    filter = rep(TRUE, nrow(dt)),
+    note = "Flere svar mulig"
+) {
+  tab <- multi_table(vars, labels, filter)
+  status <- attr(tab, "status")
+
+  cat("\n\n### ", title, "\n\n", sep = "")
+
+  if (identical(status, "missing_variables")) {
+    cat("> Ingen av de forventede variablene finnes i datasettet.\n\n")
+    print(show_table(tab[, .(Alternativ, n, Prosent)]))
+    return(invisible(tab))
+  }
+
+  if (identical(status, "no_eligible")) {
+    cat("> Ingen kommuner inngår i den aktuelle filterpopulasjonen.\n\n")
+    return(invisible(tab))
+  }
+
+  print(plot_multi(tab, title, note))
+  cat("\n\n")
+  print(show_table(tab[, .(Alternativ, n, Prosent)]))
+  cat(
+    "\n\n*Grunnlag: n = ", attr(tab, "denominator"),
+    " kommuner. Prosentene kan summere til mer enn 100.*\n\n",
+    sep = ""
+  )
+  invisible(tab)
+}
+
+find_multi <- function(prefix) {
+  grep(paste0("^", prefix, "_[0-9]+$"), names(dt), value = TRUE)
+}
+
+yes_no <- c(`1` = "Ja", `2` = "Nei", Ja = "Ja", Nei = "Nei")
+yes_no_dk <- c(
+  `1` = "Ja", `2` = "Nei", `3` = "Vet ikke",
+  Ja = "Ja", Nei = "Nei", `Vet ikke` = "Vet ikke"
+)
+yes_no_dk_na <- c(
+  `1` = "Ja", `2` = "Nei", `3` = "Vet ikke", `4` = "Ikke aktuelt",
+  Ja = "Ja", Nei = "Nei", `Vet ikke` = "Vet ikke", `Ikke aktuelt` = "Ikke aktuelt"
+)
+```
+
+# Sammendrag
+
+Rapporten viser hovedsakelig nasjonale resultater. Én kommune er analyseenheten. For hvert spørsmål oppgis antall og prosent. Filterspørsmål får et eksplisitt beregningsgrunnlag. Resultatene beskriver kommunene som svarte på undersøkelsen, ikke nødvendigvis alle landets kommuner.
+
+```{r}
+#| label: nokkeltall
+summary_tab <- data.table(
+  Mål = c("Rader i analysefil", "Unike kommuner", "Kommuner med svarstatus Ja"),
+  Verdi = c(
+    n_total,
+    n_kommuner,
+    if ("svar" %in% names(dt)) sum(is_yes(dt$svar), na.rm = TRUE) else NA_integer_
+  )
+)
+show_table(summary_tab)
+```
+
+## Datadekning og svarstatus
+
+```{r}
+#| results: asis
+if ("svar" %in% names(dt)) {
+  report_single("svar", "Svarstatus", c(Ja = "Ja", Nei = "Nei", `1` = "Ja", `2` = "Nei"))
+} else {
+  cat("> Variabelen `svar` finnes ikke. Svarprosent kan ikke beregnes fra denne fila.\n")
+}
+```
+
+```{r}
+#| label: svar-etter-landsdel
+if (all(c("svar", "landsdel") %in% names(dt))) {
+  tmp <- dt[, .(Inviterte = .N, Svar = sum(is_yes(svar))), by = landsdel]
+  tmp[, Svarprosent := 100 * Svar / Inviterte]
+  print(show_table(setnames(tmp, "Svarprosent", "Prosent")))
+}
+```
+
+> Hvis datasettet bare inneholder kommuner som svarte, kan svarprosent ikke beregnes uten en egen fil med alle inviterte kommuner.
+
+# Om respondentene
+
+```{r}
+#| results: asis
+report_single(
+  "s_1", "Organisatorisk plassering",
+  c(`1` = "Kommuneadministrasjonen", `2` = "Tjenestenivå",
+    Kommuneadministrasjonen = "Kommuneadministrasjonen", Tjenestenivå = "Tjenestenivå")
+)
+report_single(
+  "s_2", "Funksjon eller tittel",
+  c(`1` = "Rådgiver/saksbehandler", `2` = "Tjenesteyter", `3` = "Kommune(over-)lege",
+    `4` = "Mellomleder", `5` = "Toppleder", `6` = "Annet")
+)
+report_single(
+  "s_3", "Sektortilknytning",
+  c(`1` = "Plan, areal, næring og samferdsel", `2` = "Kultur, idrett og frivillighet",
+    `3` = "Miljø og klima", `4` = "Helse, omsorg og velferd",
+    `5` = "Oppvekst og utdanning", `6` = "Sektorovergripende avdeling/stab", `7` = "Annet")
+)
+```
+
+# Oversikt over helsetilstand og påvirkningsfaktorer
+
+```{r}
+#| results: asis
+report_single("q16b", "1a. Ivaretar kommunen kravet til oversikt?", yes_no_dk)
+report_single(
+  "q16", "1b. Når ble oversiktsdokumentet sist utarbeidet?",
+  c(
+    `1` = "Under utarbeidelse nå", `2` = "2026", `3` = "2025", `4` = "2024",
+    `5` = "2023", `6` = "2022", `7` = "2021", `8` = "2020", `9` = "2019",
+    `10` = "Har ikke utarbeidet et slikt dokument",
+    `Under utarbeidelse nå` = "Under utarbeidelse nå",
+    `Har ikke utarbeidet et slikt dokument` = "Har ikke utarbeidet et slikt dokument"
+  )
+)
+```
+
+## Deler av kommunen som er involvert
+
+Bare kommuner med svaralternativ 1 til 9 på spørsmål 1b inngår.
+
+```{r}
+#| results: asis
+f_q2 <- if (var_exists("q16")) {
+  q16_value <- as_chr(dt$q16)
+  q16_value %in% c(as.character(1:9), "Under utarbeidelse nå", as.character(2019:2026))
+} else {
+  rep(FALSE, nrow(dt))
+}
+
+vars_q2 <- c(
+  "s_16_1", "s_16_2", "s_16_3", "s_16_4", "s_16_15", "s_16_5", "s_16_6",
+  "s_16_8", "s_16_9", "s_16_10", "s_16_11", "s_16_12", "s_16_13"
+)
+labs_q2 <- c(
+  s_16_1 = "Samfunnsmedisinsk", s_16_2 = "Plan og bygning",
+  s_16_3 = "Samfunn-/byutvikling", s_16_4 = "Helse og omsorg",
+  s_16_15 = "Velferd, arbeid og integrering", s_16_5 = "Miljø og klima",
+  s_16_6 = "Kultur og frivillighet", s_16_8 = "Næring", s_16_9 = "Utdanning",
+  s_16_10 = "Barnehage", s_16_11 = "Eiendom", s_16_12 = "Miljøteknisk",
+  s_16_13 = "Annet"
+)
+report_multi(vars_q2, labs_q2, "2. Deler av kommunen involvert i oversiktsarbeidet", f_q2)
+```
+
+# Interkommunalt samarbeid
+
+```{r}
+#| results: asis
+report_single("q2_1", "3a. Samarbeider kommunen med andre kommuner?", yes_no)
+
+f_q3b <- if (var_exists("q2_1")) is_yes(dt$q2_1) else rep(FALSE, nrow(dt))
+vars_q3b <- find_multi("q2_2")
+labs_q3b <- c(
+  q2_2_1 = "Folkehelsearbeid", q2_2_2 = "Tilsyn",
+  q2_2_3 = "Beredskap", q2_2_4 = "Kommuneoverlegefunksjonen"
+)
+
+if (length(vars_q3b) > 0L) {
+  report_multi(vars_q3b, labs_q3b, "3b. Områder det samarbeides om", f_q3b)
+} else {
+  report_single(
+    "q2_2", "3b. Områder det samarbeides om",
+    c(`1` = "Folkehelsearbeid", `2` = "Tilsyn", `3` = "Beredskap", `4` = "Kommuneoverlegefunksjonen"),
+    f_q3b,
+    "Kontroller om flersvar er eksportert som én eller flere kolonner"
+  )
+}
+```
+
+# Største folkehelseutfordringer og prioriterte tiltak
+
+```{r}
+#| results: asis
+challenge_labels <- c(
+  "1" = "Befolkningssammensetning", "2" = "Aldring av befolkningen",
+  "3" = "Sosioøkonomiske forskjeller", "4" = "Barnehage", "5" = "Skole/utdanning",
+  "6" = "Bolig", "7" = "Tilknytning til arbeidsliv", "8" = "Levekår",
+  "9" = "Opphoping av levekårsutfordringer", "10" = "Fritidstilbud",
+  "11" = "Klima og miljø", "12" = "Nærmiljø", "13" = "Sosial støtte/deltagelse/mestring",
+  "14" = "Utenforskap/ensomhet", "15" = "Skader", "16" = "Ulykker",
+  "17" = "Tobakksbruk", "18" = "Rusmiddelbruk", "19" = "Ernæring/kosthold",
+  "20" = "Fysisk aktivitet", "21" = "Psykisk helse og livskvalitet",
+  "22" = "Fysisk helse", "23" = "Sosial ulikhet i helse", "24" = "Andre tema",
+  "25" = "Ikke identifisert eller ikke prioritert tiltak"
+)
+
+vars_4a <- paste0("s_7_", 1:25)
+vars_4b <- paste0("s_29_", 1:25)
+labs_4a <- setNames(unname(challenge_labels), vars_4a)
+labs_4b <- setNames(unname(challenge_labels), vars_4b)
+
+report_multi(
+  vars_4a, labs_4a, "4a. Kommunenes største folkehelseutfordringer",
+  note = "Inntil fem svar, med maksimalt to helsetilstandsalternativer"
+)
+report_multi(
+  vars_4b, labs_4b, "4b. Områder der tiltak er prioritert",
+  note = "Inntil fem svar, med maksimalt to helsetilstandsalternativer"
+)
+```
+
+## Samsvar mellom utfordringer og tiltak
+
+```{r}
+#| label: samsvar
+pairs <- data.table(
+  i = 1:24,
+  utfordring = vars_4a[1:24],
+  tiltak = vars_4b[1:24],
+  Tema = unname(challenge_labels[as.character(1:24)])
+)
+pairs <- pairs[utfordring %in% names(dt) & tiltak %in% names(dt)]
+
+if (nrow(pairs) > 0L) {
+  match_tab <- pairs[, {
+    u <- as_checked(dt[[utfordring]])
+    t <- as_checked(dt[[tiltak]])
+    den <- sum(u, na.rm = TRUE)
+    both <- sum(u & t, na.rm = TRUE)
+    .(
+      Identifisert_n = den,
+      Tiltak_blant_identifiserte_n = both,
+      Prosent = if (den > 0L) 100 * both / den else NA_real_
+    )
+  }, by = Tema]
+  print(show_table(match_tab[order(-Identifisert_n)]))
+} else {
+  cat("> Ingen komplette variabelpar for utfordring og tiltak ble funnet.\n")
+}
+```
+
+> Tabellen er deskriptiv. Den viser hvor ofte samme tema er identifisert og prioritert i samme kommune, men sier ikke om tiltaket er gjennomført eller har effekt.
+
+# Planstrategi og planer
+
+```{r}
+#| results: asis
+report_single("q18", "5. Er hovedutfordringene drøftet i kommunal planstrategi?", yes_no_dk)
+
+f_q6 <- if (var_exists("q18")) is_yes(dt$q18) else rep(FALSE, nrow(dt))
+report_single(
+  "q19",
+  "6. Har utfordringene påvirket prioritering eller utarbeiding av planer?",
+  yes_no_dk,
+  f_q6,
+  "Bare kommuner som svarte Ja på spørsmål 5"
+)
+```
+
+```{r}
+#| results: asis
+vars_q8 <- paste0("q20_", 1:16)
+labs_q8 <- setNames(
+  c(
+    "Kommuneplanens samfunnsdel", "Kommuneplanens arealdel",
+    "Økonomiplan/handlingsprogram", "Planer for oppvekst", "Planer for utdanning",
+    "Planer for by-/nærmiljø-/arealutvikling", "Planer innen helse/sosial",
+    "Planer for miljø og klima", "Planer for kultur", "Planer for frivillighet",
+    "Planer for næringsutvikling", "Egen plan for folkehelse",
+    "Forebyggende plan i barnevernsloven", "Alkoholpolitisk handlingsplan",
+    "Andre temaområder", "Ingen av disse"
+  ),
+  vars_q8
+)
+report_multi(vars_q8, labs_q8, "8. Planer med mål og strategier for folkehelseutfordringene")
+```
+
+# Samiske folkehelseutfordringer
+
+```{r}
+#| results: asis
+report_single(
+  "q23_1",
+  "7a. Oppmerksomhet på særskilte folkehelseutfordringer i den samiske befolkningen",
+  yes_no_dk_na
+)
+
+f_q7b <- if (var_exists("q23_1")) is_yes(dt$q23_1) else rep(FALSE, nrow(dt))
+if (var_exists("q23_2")) {
+  cat(
+    "\nAntall utfylte fritekstsvar blant kommuner i filteret: **",
+    valid_n("q23_2", f_q7b),
+    "**.\n",
+    sep = ""
+  )
+}
+```
+
+> Rå fritekst bør ikke publiseres ukritisk. Konkrete beskrivelser kan identifisere kommune eller enkeltperson.
+
+# Evaluering, læring og forbedring
+
+```{r}
+#| results: asis
+report_single(
+  "q21",
+  "9a. Har kommunen gjennomgått og vurdert folkehelsearbeidet i fireårsperioden?",
+  yes_no_dk
+)
+
+f_q9 <- if (var_exists("q21")) is_yes(dt$q21) else rep(FALSE, nrow(dt))
+free_text_counts <- data.table(
+  Fritekst = c(
+    "9b. Forbedringsområder",
+    "9c. Bruk av erfaringer i neste fireårssyklus"
+  ),
+  Variabel = c("q21b", "q21b_1"),
+  n = c(valid_n("q21b", f_q9), valid_n("q21b_1", f_q9))
+)
+print(show_table(free_text_counts))
+```
+
+> Fritekstsvar bør kodes tematisk i en separat, dokumentert analyse. Rapportér temaer med antall kommuner og anonymiser eventuelle sitater.
+
+# Barrierer og utfordringer
+
+```{r}
+#| results: asis
+barrier_text <- c(
+  "Organisering og samordning", "Forankring", "Kapasitet og personellressurser",
+  "Kompetanse", "Prioritering fra ledelsen", "Annet"
+)
+vars_10a <- paste0("q10a_", 1:6)
+vars_10b <- paste0("q10b_", 1:6)
+labs_10a <- setNames(barrier_text, vars_10a)
+labs_10b <- setNames(barrier_text, vars_10b)
+
+report_multi(vars_10a, labs_10a, "10a. Barrierer for systematisk folkehelsearbeid")
+report_multi(vars_10b, labs_10b, "10b. Barrierer for kunnskapsbasert og langsiktig folkehelsearbeid")
+```
+
+# Nasjonale resultater etter kommunekjennetegn
+
+Undergrupper vises som sekundære analyser. Fastsett og dokumenter en publiseringsgrense før offentliggjøring.
+
+```{r}
+#| label: undergrupper
+stratified_yes <- function(v, group, min_n = 5L) {
+  if (!all(c(v, group) %in% names(dt))) return(NULL)
+  z <- dt[
+    !is.na(get(group)) & as_chr(get(group)) != "" &
+      !is.na(get(v)) & as_chr(get(v)) != "",
+    .(n = .N, Ja_n = sum(is_yes(get(v)))),
+    by = group
+  ]
+  z <- z[n >= min_n]
+  if (nrow(z) == 0L) return(NULL)
+  z[, Prosent := 100 * Ja_n / n]
+  z[]
+}
+
+key_items <- c(
+  q16b = "Krav til oversikt ivaretatt",
+  q2_1 = "Interkommunalt samarbeid",
+  q18 = "Utfordringer drøftet i planstrategi",
+  q21 = "Arbeidet vurdert i fireårsperioden"
+)
+
+for (g in intersect(c("landsdel", "liten", "sentralitetnavn"), names(dt))) {
+  cat("\n\n## Etter ", g, "\n\n", sep = "")
+  for (v in names(key_items)) {
+    z <- stratified_yes(v, g)
+    if (!is.null(z)) {
+      cat("\n### ", key_items[[v]], "\n\n", sep = "")
+      print(show_table(z))
+      cat("\n")
+    }
+  }
+}
+```
+
+> Undergruppeforskjeller er deskriptive og bør ikke tolkes kausalt. Små grupper gir stor tilfeldig usikkerhet.
+
+# Datakvalitet og kontroll
+
+```{r}
+#| label: kvalitetskontroll
+checks <- list(
+  duplikate_kommuner = if ("kommunenummer4" %in% names(dt)) {
+    sum(duplicated(dt$kommunenummer4) | duplicated(dt$kommunenummer4, fromLast = TRUE))
+  } else NA_integer_,
+  ugyldig_kommunenummer = if ("kommunenummer4" %in% names(dt)) {
+    sum(!grepl("^[0-9]{4}$", dt$kommunenummer4), na.rm = TRUE)
+  } else NA_integer_,
+  mangler_fylke = if ("fylke" %in% names(dt)) {
+    sum(is.na(dt$fylke) | as_chr(dt$fylke) == "")
+  } else NA_integer_,
+  mangler_landsdel = if ("landsdel" %in% names(dt)) {
+    sum(is.na(dt$landsdel) | as_chr(dt$landsdel) == "")
+  } else NA_integer_,
+  mangler_folketall = if ("folketall2026" %in% names(dt)) {
+    sum(is.na(dt$folketall2026))
+  } else NA_integer_
+)
+print(show_table(data.table(Kontroll = names(checks), Antall = as.integer(unlist(checks)))))
+```
+
+## Filterkontroller
+
+```{r}
+#| label: filterkontroller
+any_answered <- function(vars) {
+  vars <- intersect(vars, names(dt))
+  if (length(vars) == 0L) return(rep(FALSE, nrow(dt)))
+  m <- sapply(vars, function(v) {
+    z <- as_chr(dt[[v]])
+    !is.na(z) & z != ""
+  })
+  if (is.null(dim(m))) m <- matrix(m, ncol = 1L)
+  rowSums(m) > 0
+}
+
+filter_violations <- data.table(
+  Kontroll = c(
+    "Spørsmål 2 besvart uten gyldig svar på 1b",
+    "Spørsmål 3b besvart uten Ja på 3a",
+    "Spørsmål 6 besvart uten Ja på 5",
+    "Spørsmål 7b besvart uten Ja på 7a",
+    "Spørsmål 9b eller 9c besvart uten Ja på 9a"
+  ),
+  Antall = c(
+    sum(!normalize_filter(f_q2) & any_answered(vars_q2)),
+    sum(!normalize_filter(f_q3b) & any_answered(c(vars_q3b, "q2_2"))),
+    sum(!normalize_filter(f_q6) & any_answered("q19")),
+    sum(!normalize_filter(f_q7b) & any_answered("q23_2")),
+    sum(!normalize_filter(f_q9) & any_answered(c("q21b", "q21b_1")))
+  )
+)
+print(show_table(filter_violations))
+```
+
+# Metodenotat
+
+- **Analyseenhet:** Kommune, forutsatt én gyldig besvarelse per kommune.
+- **Nasjonale estimater:** Uvektet andel blant kommuner med gyldig svar som fikk spørsmålet.
+- **Flersvar:** Nevneren er antall kommuner i relevant filterpopulasjon. Prosentene kan summere til mer enn 100.
+- **Filterspørsmål:** Spørsmål 2 følger 1b; 3b følger 3a; 6 følger 5; 7b følger 7a; 9b og 9c følger 9a.
+- **Mangler:** Skill mellom strukturelt manglende på grunn av filter, reelt ubesvart og ukjent kode.
+- **Vekting:** Kommunevektede tall er hovedresultat når kommunen er analyseenheten. Befolkningsvektede tall svarer på hvor stor andel av befolkningen som bor i kommuner med et bestemt kjennetegn, og bør eventuelt vises separat.
+- **Frafall:** Sammenlign svarere og ikke-svarere etter fylke, landsdel, kommunestørrelse og sentralitet dersom bruttoutvalget finnes.
+- **Personvern:** Kontaktopplysninger og rå fritekst skal ikke publiseres.
+
+# Vedlegg A: Variabeldekning
+
+```{r}
+#| label: variabeldekning
+expected <- unique(c(
+  "s_1", "s_2", "S_3", "q16b", "q16", vars_q2, "s_16_14_other",
+  "q2_1", "q2_2", paste0("q2_2_", 1:4), vars_4a, vars_4b,
+  "q18", "q19", "q23_1", "q23_2", vars_q8, "q21", "q21b", "q21b_1",
+  vars_10a, "q10a_6_other", vars_10b, "q10b_6_other", "q22"
+))
+coverage <- data.table(Variabel = expected, Finnes = expected %in% names(dt))
+print(show_table(coverage))
+```
+
+# Vedlegg B: Kodekontroll for filtervariabler
+
+```{r}
+#| label: kodekontroll
+check_vars <- intersect(c("q16", "q2_1", "q18", "q19", "q23_1", "q21"), names(dt))
+if (length(check_vars) > 0L) {
+  kodekontroll <- rbindlist(
+    lapply(check_vars, function(v) {
+      z <- as_chr(dt[[v]])
+      data.table(Variabel = v, Verdi = z)[, .(n = .N), by = .(Variabel, Verdi)]
+    }),
+    fill = TRUE
+  )
+  print(show_table(kodekontroll[order(Variabel, -n)]))
+}
+```
+
+# Vedlegg C: Sesjonsinformasjon
+
+```{r}
+#| label: session-info
+sessionInfo()
+```
