@@ -11,7 +11,7 @@ format:
     number-sections: true # automatiserer numrer på kap automatisk
     code-fold: true
     code-summary: "Vis kode"
-    embed-resources: true
+    embed-resources: false
     theme: cosmo # tema til font, tabeller mm.
     fig-width: 9
     fig-height: 5.5
