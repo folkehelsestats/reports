@@ -1,26 +1,26 @@
 ---
 title: "Kommunens forvaltning av folkehelseloven 2026"
-subtitle: "Nasjonale resultater fra kommuneundersøkelsen"
+subtitle: "Nasjonale resultater fra undersøkelsen"
 author: "Helsedirektoratet"
 date: last-modified
 lang: nb
 format:
   html:
-    toc: true
+    toc: true # lager innholdsfotegnelse
     toc-depth: 3
-    number-sections: true
+    number-sections: true # automatiserer numrer på kap automatisk
     code-fold: true
     code-summary: "Vis kode"
     embed-resources: true
-    theme: cosmo
+    theme: cosmo # tema til font, tabeller mm.
     fig-width: 9
     fig-height: 5.5
     df-print: paged
 execute:
-  echo: false
-  warning: false
+  echo: false # kode vises hovedsakelig ikke
+  warning: true # viser varsler
   message: false
-  freeze: auto
+  freeze: false # endre til auto senere.
 params:
   data_file: "O:/Prosjekt/Rusdata/Kommunenes forvaltning/Folkehelsearbeid/Folkehelse_2025_2026/data/kff_2026.rds"
   object_name: null
@@ -28,23 +28,26 @@ params:
 
 ```{r}
 #| label: oppsett
-#| include: false
+#| include: false # kode, tabeller, melinger eller figurer fra blokken skjules.
 
 library(data.table)
 library(ggplot2)
-library(scales)
-library(knitr)
+library(scales) # til prosentformatering
+library(knitr) # tabekkfunksjon
+library(highdir)
 
+  # globale R-instillinger om at store tall vises fullt, bruker komma ikke . i kommatall, viser tom celle i stedet for NA i tabeller, og standardtema for figurer:
 options(scipen = 999, OutDec = ",", knitr.kable.NA = "")
 theme_set(theme_minimal(base_size = 12))
 
+  # Kontroll av datafila:
 if (!file.exists(params$data_file)) {
   stop(
     "Fant ikke datafilen: ", params$data_file,
     ". Lagre analyseobjektet som data/kff_2026.rds, eller endre params$data_file i YAML."
   )
 }
-
+   #innlesing av fil if :
 x <- readRDS(params$data_file)
 if (!is.null(params$object_name) && is.list(x) && params$object_name %in% names(x)) {
   x <- x[[params$object_name]]
@@ -52,16 +55,19 @@ if (!is.null(params$object_name) && is.list(x) && params$object_name %in% names(
 dt <- as.data.table(x)
 
 if ("kommunenummer4" %in% names(dt)) {
-  dt[, kommunenummer4 := sprintf("%04s", as.character(kommunenummer4))]
+  dt[, kommunenummer4 := sprintf("%04d", as.integer(kommunenummer4))]
 } else if ("kommunenummer" %in% names(dt)) {
-  dt[, kommunenummer4 := sprintf("%04s", as.character(kommunenummer))]
+  dt[, kommunenummer4 := sprintf("%04d", as.integer(kommunenummer))]
 }
 
-n_total <- nrow(dt)
+n_total <- nrow(dt) # teller antall rader
+  # unike kommuner:
 n_kommuner <- if ("kommunenummer4" %in% names(dt)) uniqueN(dt$kommunenummer4) else n_total
 
+  # hjelpefunkjon, sjekker at variabel eksisterer i dt:
 var_exists <- function(v) v %in% names(dt)
 
+  # hjekoefunksjon som stnadardiserer variabel til ryddg tekst - håndterer både tall og label, og gjør den om til tekst, samt fjerner mellomrom:
 as_chr <- function(z) {
   if (inherits(z, "haven_labelled")) {
     if (!requireNamespace("haven", quietly = TRUE)) {
@@ -72,20 +78,22 @@ as_chr <- function(z) {
   trimws(as.character(z))
 }
 
+  # Filter kontroll. 
 normalize_filter <- function(filter, n = nrow(dt)) {
   if (length(filter) == 1L) filter <- rep(filter, n)
   if (length(filter) != n) {
     stop("Filteret har lengde ", length(filter), ", mens datasettet har ", n, " rader.")
   }
-  filter <- as.logical(filter)
+  filter <- as.logical(filter) # gjør filter logisk: true/false/na
   filter[is.na(filter)] <- FALSE
   filter
 }
-
+  #funksjon som undersøker en verdi betyr ja eller valgt (til små bokstaver):
 is_yes <- function(z) {
   tolower(as_chr(z)) %in% c("1", "ja", "yes", "true", "x", "checked", "valgt")
 }
 
+  # Flervalgsspørsmål:
 as_checked <- function(z) {
   if (is.logical(z)) {
     z[is.na(z)] <- FALSE
@@ -93,14 +101,15 @@ as_checked <- function(z) {
   }
   is_yes(z)
 }
-
+  # Teler gyldige, ikke-tomme svar i en variabel:
 valid_n <- function(v, filter = rep(TRUE, nrow(dt))) {
   if (!var_exists(v)) return(0L)
   filter <- normalize_filter(filter)
   z <- as_chr(dt[[v]])
   sum(filter & !is.na(z) & z != "")
 }
-
+  
+  # Funksjon som lager frekvenstabell for spørsmål med ett svar per kommune, og gir svar, n og prosent.
 single_table <- function(
     v,
     labels = NULL,
@@ -113,7 +122,7 @@ single_table <- function(
       Svar = "Variabel mangler i data",
       n = NA_integer_,
       Prosent = NA_real_
-    )
+    ) # atributter (skjulte metadata):
     setattr(out, "denom_text", denom_text)
     setattr(out, "status", "missing_variable")
     setattr(out, "eligible_n", 0L)
@@ -137,7 +146,7 @@ single_table <- function(
     setattr(out, "eligible_n", eligible_n)
     return(out)
   }
-
+    # kobler koder til etiketter/labels:
   if (!is.null(labels)) {
     mapped <- unname(labels[z])
     unknown <- unique(z[is.na(mapped) & !is.na(z) & z != ""])
@@ -148,19 +157,20 @@ single_table <- function(
   }
 
   z[is.na(z) | z == ""] <- "Ubesvart"
-  out <- data.table(Svar = z)[, .(n = .N), by = Svar]
+  out <- data.table(Svar = z)[, .(n = .N), by = Svar] # lager frekvenstabell
   out[, Prosent := 100 * n / sum(n)]
   setattr(out, "denom_text", denom_text)
   setattr(out, "status", "ok")
   setattr(out, "eligible_n", eligible_n)
-  out[order(-n, Svar)]
+  out[order(-n, Svar)] # synkende presentasjon
 }
 
+  # Funksjon for flervalgsspørsmål:
 multi_table <- function(
     vars,
     labels,
     filter = rep(TRUE, nrow(dt)),
-    denominator = c("eligible", "responded_any")
+    denominator = c("eligible", "responded_any") # hva som skal inngå i nevner
 ) {
   denominator <- match.arg(denominator)
   vars <- intersect(vars, names(dt))
@@ -178,12 +188,13 @@ multi_table <- function(
   }
 
   filter <- normalize_filter(filter)
+  # Med flere variabler blir resultatet en matrise. Med bare én variabel kan resultatet bli en enkel vektor.
   m <- sapply(vars, function(v) as_checked(dt[[v]]))
   if (is.null(dim(m))) {
     m <- matrix(m, ncol = 1L, dimnames = list(NULL, vars))
   }
 
-  eligible <- filter
+  eligible <- filter # bestem filterpopulsjon, standard alle med
   if (denominator == "responded_any") {
     raw_present <- sapply(vars, function(v) {
       z <- as_chr(dt[[v]])
@@ -193,13 +204,13 @@ multi_table <- function(
     eligible <- eligible & rowSums(raw_present) > 0
   }
 
-  den <- sum(eligible)
-  counts <- if (den > 0L) {
+  den <- sum(eligible) # nevner
+  counts <- if (den > 0L) { # teller avkrysninger
     colSums(m[eligible, , drop = FALSE], na.rm = TRUE)
   } else {
     setNames(rep(0L, length(vars)), vars)
   }
-
+  # resultatdata til flervalg:
   out <- data.table(
     variabel = vars,
     Alternativ = unname(labels[vars]),
@@ -213,6 +224,7 @@ multi_table <- function(
   out[order(-Prosent, Alternativ)]
 }
 
+  # stolpdiagram:
 plot_single <- function(tab, title, subtitle = NULL) {
   z <- copy(tab)[!is.na(Prosent)]
   ggplot(z, aes(x = reorder(Svar, Prosent), y = Prosent)) +
@@ -231,6 +243,7 @@ plot_single <- function(tab, title, subtitle = NULL) {
     theme(plot.margin = margin(5.5, 35, 5.5, 5.5))
 }
 
+  #Plot for flervalgsspørsmål
 plot_multi <- function(tab, title, note = "Flere svar mulig") {
   z <- copy(tab)[!is.na(Prosent)]
   ggplot(z, aes(x = reorder(Alternativ, Prosent), y = Prosent)) +
@@ -249,6 +262,7 @@ plot_multi <- function(tab, title, note = "Flere svar mulig") {
     theme(plot.margin = margin(5.5, 75, 5.5, 5.5))
 }
 
+  # tabell til rapporten:
 show_table <- function(tab, digits = 1) {
   z <- copy(tab)
   if ("Prosent" %in% names(z)) {
@@ -339,6 +353,662 @@ yes_no_dk_na <- c(
   `1` = "Ja", `2` = "Nei", `3` = "Vet ikke", `4` = "Ikke aktuelt",
   Ja = "Ja", Nei = "Nei", `Vet ikke` = "Vet ikke", `Ikke aktuelt` = "Ikke aktuelt"
 )
+
+# Ekstra hjelpefunksjoner til å lage figur, tabell og kontroller mellom to variabler:
+
+grouped_single_result <- function(
+    data,
+    variable,
+    group,
+    labels = NULL,
+    response_order = NULL,
+    group_order = NULL,
+    figure_response = "Ja",
+    title = NULL,
+    subtitle = NULL,
+    xlab = NULL,
+    min_n = 1L,
+    sort_figure = c("group_order", "result"),
+    show_n_in_figure = TRUE,
+    include_missing = FALSE,
+    missing_label = "Ubesvart",
+    colour = "#0067B9"
+) {
+
+  sort_figure <- match.arg(sort_figure)
+
+  # -------------------------------------------------------
+  # 1. Kontroller variabelnavn
+  # -------------------------------------------------------
+
+  required_variables <- c(
+    variable,
+    group
+  )
+
+  missing_variables <- setdiff(
+    required_variables,
+    names(data)
+  )
+
+  if (length(missing_variables) > 0L) {
+    stop(
+      "Følgende variabler mangler i datasettet: ",
+      paste(missing_variables, collapse = ", ")
+    )
+  }
+
+  # -------------------------------------------------------
+  # 2. Lokal hjelpefunksjon for surveyvariabler
+  # -------------------------------------------------------
+
+  to_text <- function(z) {
+
+    if (inherits(z, "haven_labelled")) {
+
+      if (!requireNamespace(
+        "haven",
+        quietly = TRUE
+      )) {
+        stop(
+          "Pakken 'haven' må installeres for å håndtere ",
+          "haven_labelled-variabler."
+        )
+      }
+
+      z <- haven::as_factor(
+        z,
+        levels = "labels"
+      )
+    }
+
+    trimws(
+      as.character(z)
+    )
+  }
+
+  # -------------------------------------------------------
+  # 3. Lag en enkel analysetabell
+  # -------------------------------------------------------
+
+  analysis_data <- data.table::data.table(
+    Gruppe = to_text(data[[group]]),
+    Svar = to_text(data[[variable]])
+  )
+
+  # -------------------------------------------------------
+  # 4. Koble verdikoder til svartekster
+  # -------------------------------------------------------
+
+  if (!is.null(labels)) {
+
+    mapped <- unname(
+      labels[analysis_data$Svar]
+    )
+
+    # Erstatt bare kodene som finnes i labels.
+    # Ukjente verdier beholdes for kontroll.
+    analysis_data[
+      !is.na(mapped),
+      Svar := mapped[!is.na(mapped)]
+    ]
+  }
+
+  # -------------------------------------------------------
+  # 5. Håndter manglende svar
+  # -------------------------------------------------------
+
+  analysis_data[
+    is.na(Gruppe) |
+      Gruppe == "",
+    Gruppe := NA_character_
+  ]
+
+  analysis_data[
+    is.na(Svar) |
+      Svar == "",
+    Svar := NA_character_
+  ]
+
+  # Rader uten grupperingsinformasjon kan ikke brukes
+  analysis_data <- analysis_data[
+    !is.na(Gruppe)
+  ]
+
+  if (include_missing) {
+
+    analysis_data[
+      is.na(Svar),
+      Svar := missing_label
+    ]
+
+  } else {
+
+    # Standard: prosent beregnes blant gyldige svar
+    analysis_data <- analysis_data[
+      !is.na(Svar)
+    ]
+  }
+
+  if (nrow(analysis_data) == 0L) {
+    stop(
+      "Ingen gyldige observasjoner finnes for kombinasjonen ",
+      variable,
+      " og ",
+      group,
+      "."
+    )
+  }
+
+  # -------------------------------------------------------
+  # 6. Bestem svarrekkefølge
+  # -------------------------------------------------------
+
+  observed_responses <- unique(
+    analysis_data$Svar
+  )
+
+  if (is.null(response_order)) {
+
+    response_order <- observed_responses
+
+  } else {
+
+    # Eventuelle ukjente svar legges sist
+    unknown_responses <- setdiff(
+      observed_responses,
+      response_order
+    )
+
+    response_order <- c(
+      response_order,
+      unknown_responses
+    )
+  }
+
+  # Fjern duplikater samtidig som rekkefølgen beholdes
+  response_order <- unique(
+    response_order
+  )
+
+  # -------------------------------------------------------
+  # 7. Bestem grupperekkefølge
+  # -------------------------------------------------------
+
+  observed_groups <- unique(
+    analysis_data$Gruppe
+  )
+
+  if (is.null(group_order)) {
+
+    # Hvis den opprinnelige grupperingsvariabelen er faktor,
+    # brukes faktorens nivårekkefølge.
+    if (is.factor(data[[group]])) {
+
+      original_levels <- levels(
+        data[[group]]
+      )
+
+      group_order <- c(
+        intersect(
+          original_levels,
+          observed_groups
+        ),
+        setdiff(
+          observed_groups,
+          original_levels
+        )
+      )
+
+    } else {
+
+      group_order <- sort(
+        observed_groups
+      )
+    }
+
+  } else {
+
+    # Eventuelle uventede grupper legges sist
+    unknown_groups <- setdiff(
+      observed_groups,
+      group_order
+    )
+
+    group_order <- c(
+      group_order,
+      unknown_groups
+    )
+  }
+
+  group_order <- unique(
+    group_order
+  )
+
+  # -------------------------------------------------------
+  # 8. Tell svar innen hver gruppe
+  # -------------------------------------------------------
+
+  result <- analysis_data[
+    ,
+    .(
+      n = .N
+    ),
+    by = .(
+      Gruppe,
+      Svar
+    )
+  ]
+
+  # -------------------------------------------------------
+  # 9. Lag alle kombinasjoner
+  # -------------------------------------------------------
+
+  # Dette gjør at kategorier med null svar også kommer med.
+  complete_grid <- data.table::as.data.table(
+    expand.grid(
+      Gruppe = group_order,
+      Svar = response_order,
+      stringsAsFactors = FALSE
+    )
+  )
+
+  result <- merge(
+    complete_grid,
+    result,
+    by = c(
+      "Gruppe",
+      "Svar"
+    ),
+    all.x = TRUE,
+    sort = FALSE
+  )
+
+  result[
+    is.na(n),
+    n := 0L
+  ]
+
+  # -------------------------------------------------------
+  # 10. Beregn nevner og prosent innen hver gruppe
+  # -------------------------------------------------------
+
+  result[
+    ,
+    Grunnlag := sum(n),
+    by = Gruppe
+  ]
+
+  result[
+    ,
+    Prosent := if (
+      unique(Grunnlag) > 0L
+    ) {
+      100 * n / Grunnlag
+    } else {
+      rep(
+        NA_real_,
+        .N
+      )
+    },
+    by = Gruppe
+  ]
+
+  # -------------------------------------------------------
+  # 11. Merk små grupper
+  # -------------------------------------------------------
+
+
+result[
+  ,
+  Publiserbar := !is.na(Grunnlag) &
+    Grunnlag >= min_n
+]
+
+# Skjul prosent dersom gruppen har færre gyldige svar
+# enn den valgte publiseringsgrensen.
+result[
+  is.na(Publiserbar) |
+    Publiserbar == FALSE,
+  Prosent := NA_real_
+]
+
+  # -------------------------------------------------------
+  # 12. Sett faktorordning
+  # -------------------------------------------------------
+
+  result[
+    ,
+    Gruppe := factor(
+      Gruppe,
+      levels = group_order,
+      ordered = TRUE
+    )
+  ]
+
+  result[
+    ,
+    Svar := factor(
+      Svar,
+      levels = response_order,
+      ordered = TRUE
+    )
+  ]
+
+  data.table::setorder(
+    result,
+    Gruppe,
+    Svar
+  )
+
+  # -------------------------------------------------------
+  # 13. Lag data til figuren
+  # -------------------------------------------------------
+
+  figure_data <- result[
+    as.character(Svar) == figure_response
+  ]
+
+  if (nrow(figure_data) == 0L) {
+    stop(
+      "Svaralternativet '",
+      figure_response,
+      "' finnes ikke i resultatene. Tilgjengelige svar er: ",
+      paste(
+        response_order,
+        collapse = ", "
+      )
+    )
+  }
+
+  if (sort_figure == "result") {
+
+    figure_order <- figure_data[
+      order(Prosent),
+      as.character(Gruppe)
+    ]
+
+    figure_data[
+      ,
+      Gruppe_figur := factor(
+        as.character(Gruppe),
+        levels = figure_order
+      )
+    ]
+
+  } else {
+
+    # Reverseres fordi coord_flip() ellers viser
+    # første kategori nederst.
+    figure_data[
+      ,
+      Gruppe_figur := factor(
+        as.character(Gruppe),
+        levels = rev(group_order)
+      )
+    ]
+  }
+
+  # -------------------------------------------------------
+  # 14. Lag etiketter til figuren
+  # -------------------------------------------------------
+
+  if (show_n_in_figure) {
+
+    figure_data[
+      ,
+      Etikett := ifelse(
+        is.na(Prosent),
+        "",
+        paste0(
+          formatC(
+            Prosent,
+            format = "f",
+            digits = 1,
+            decimal.mark = ","
+          ),
+          " % (n=",
+          n,
+          ")"
+        )
+      )
+    ]
+
+  } else {
+
+    figure_data[
+      ,
+      Etikett := ifelse(
+        is.na(Prosent),
+        "",
+        paste0(
+          formatC(
+            Prosent,
+            format = "f",
+            digits = 1,
+            decimal.mark = ","
+          ),
+          " %"
+        )
+      )
+    ]
+  }
+
+  # -------------------------------------------------------
+  # 15. Lag figur
+  # -------------------------------------------------------
+
+  if (is.null(title)) {
+
+    title <- paste0(
+      "Andel som svarte ",
+      figure_response,
+      ", etter ",
+      group
+    )
+  }
+
+  if (is.null(subtitle)) {
+
+    subtitle <- paste0(
+      "Prosent beregnet blant gyldige svar innen hver ",
+      group
+    )
+  }
+
+  if (is.null(xlab)) {
+    xlab <- NULL
+  }
+
+  figure <- ggplot2::ggplot(
+    figure_data,
+    ggplot2::aes(
+      x = Gruppe_figur,
+      y = Prosent
+    )
+  ) +
+    ggplot2::geom_col(
+      fill = colour,
+      width = 0.72
+    ) +
+    ggplot2::geom_text(
+      ggplot2::aes(
+        label = Etikett
+      ),
+      hjust = -0.08,
+      size = 3.6
+    ) +
+    ggplot2::coord_flip(
+      clip = "off"
+    ) +
+    ggplot2::scale_y_continuous(
+      limits = c(
+        0,
+        110
+      ),
+      breaks = seq(
+        0,
+        100,
+        by = 10
+      ),
+      labels = function(x) {
+        paste0(
+          x,
+          " %"
+        )
+      },
+      expand = ggplot2::expansion(
+        mult = c(
+          0,
+          0
+        )
+      )
+    ) +
+    ggplot2::labs(
+      title = title,
+      subtitle = subtitle,
+      x = xlab,
+      y = paste0(
+        "Andel som svarte ",
+        figure_response
+      ),
+      caption = paste0(
+        "Prosentene er beregnet innen hver gruppe. ",
+        if (show_n_in_figure) {
+          "n viser antall som valgte svaralternativet."
+        } else {
+          ""
+        }
+      )
+    ) +
+    ggplot2::theme_minimal(
+      base_size = 12
+    ) +
+    ggplot2::theme(
+      panel.grid.major.y = ggplot2::element_blank(),
+      panel.grid.minor = ggplot2::element_blank(),
+      plot.title = ggplot2::element_text(
+        face = "bold"
+      ),
+      plot.caption = ggplot2::element_text(
+        hjust = 0
+      ),
+      plot.margin = ggplot2::margin(
+        t = 10,
+        r = 75,
+        b = 10,
+        l = 10
+      )
+    )
+
+  # -------------------------------------------------------
+  # 16. Lag tabellversjon
+  # -------------------------------------------------------
+
+  table_data <- data.table::copy(
+    result
+  )
+
+  table_data[
+    ,
+    Prosent_tekst := ifelse(
+      is.na(Prosent),
+      "",
+      paste0(
+        formatC(
+          Prosent,
+          format = "f",
+          digits = 1,
+          decimal.mark = ","
+        ),
+        " %"
+      )
+    )
+  ]
+
+  table_data[
+    ,
+    Gruppe := as.character(Gruppe)
+  ]
+
+  table_data[
+    ,
+    Svar := as.character(Svar)
+  ]
+
+  table_data <- table_data[
+    ,
+    .(
+      Gruppe,
+      Svar,
+      Antall = n,
+      Prosent = Prosent_tekst,
+      `Gyldige svar i gruppen` = Grunnlag
+    )
+  ]
+
+  # -------------------------------------------------------
+  # 17. Returner alle objektene
+  # -------------------------------------------------------
+
+  list(
+    figure = figure,
+    table = table_data,
+    data = result,
+    figure_data = figure_data,
+    variable = variable,
+    group = group,
+    figure_response = figure_response
+  )
+}
+
+print_grouped_single <- function(
+    result,
+    table_caption = NULL
+) {
+
+  # Vis figuren
+  print(
+    result$figure
+  )
+
+  cat("\n\n")
+
+  if (is.null(table_caption)) {
+
+    table_caption <- paste0(
+      "Full svarfordeling for ",
+      result$variable,
+      " etter ",
+      result$group
+    )
+  }
+
+  # Vis full tabell
+  print(
+    knitr::kable(
+      result$table,
+      col.names = c(
+        result$group,
+        "Svar",
+        "Antall kommuner",
+        "Prosent",
+        "Gyldige svar i gruppen"
+      ),
+      align = c(
+        "l",
+        "l",
+        "r",
+        "r",
+        "r"
+      ),
+      caption = table_caption
+    )
+  )
+
+  invisible(result)
+}
+
 ```
 
 # Sammendrag
@@ -367,6 +1037,18 @@ if ("svar" %in% names(dt)) {
 } else {
   cat("> Variabelen `svar` finnes ikke. Svarprosent kan ikke beregnes fra denne fila.\n")
 }
+
+# Svar basert på folketall:
+  # Populasjon som er dekket basert på kommuner som har svart:
+dt[svar == "Ja", sum(folketall2026, na.rm = TRUE)]
+
+  # Populsjonen totalt:
+dt[, sum(folketall2026, na.rm = TRUE)]
+
+  # Populasjonen som er dekket gjennom besvarelse:
+100 * dt[svar == "Ja", sum(folketall2026, na.rm = TRUE)] /
+  dt[, sum(folketall2026, na.rm = TRUE)]
+
 ```
 
 ```{r}
@@ -376,21 +1058,28 @@ if (all(c("svar", "landsdel") %in% names(dt))) {
   tmp[, Svarprosent := 100 * Svar / Inviterte]
   print(show_table(setnames(tmp, "Svarprosent", "Prosent")))
 }
+
+
+if (all(c("svar", "fylke") %in% names(dt))) {
+  tmp <- dt[, .(Inviterte = .N, Svar = sum(is_yes(svar))), by = fylke]
+  tmp[, Svarprosent := 100 * Svar / Inviterte]
+  print(show_table(setnames(tmp, "Svarprosent", "Prosent")))
+}
 ```
 
-> Hvis datasettet bare inneholder kommuner som svarte, kan svarprosent ikke beregnes uten en egen fil med alle inviterte kommuner.
+> OBS. Hvis datasettet bare inneholder kommuner som svarte, kan svarprosent ikke beregnes uten en egen fil med alle inviterte kommuner.
 
 # Om respondentene
 
 ```{r}
 #| results: asis
 report_single(
-  "s_1", "Organisatorisk plassering",
+  "s_1", "Organisatorisk plassering av den som har fylt ut skjemaet",
   c(`1` = "Kommuneadministrasjonen", `2` = "Tjenestenivå",
     Kommuneadministrasjonen = "Kommuneadministrasjonen", Tjenestenivå = "Tjenestenivå")
 )
 report_single(
-  "s_2", "Funksjon eller tittel",
+  "s_2", "Tittel",
   c(`1` = "Rådgiver/saksbehandler", `2` = "Tjenesteyter", `3` = "Kommune(over-)lege",
     `4` = "Mellomleder", `5` = "Toppleder", `6` = "Annet")
 )
@@ -401,29 +1090,240 @@ report_single(
     `5` = "Oppvekst og utdanning", `6` = "Sektorovergripende avdeling/stab", `7` = "Annet")
 )
 ```
+# Ivaretar kommunen kravet til oversikt over helsetilstanden i kommunen og faktorer som påvirker denne?
+
+```{r}
+#| results: asis
+# Ivaretar kommunen kravet til oversikt over helsetilstanden i kommunen og faktorer som påvirker denne?
+
+report_single("q16b", "1a. Ivaretar kommunen kravet til oversikt over helsetilstanden i kommunen og faktorer som påvirker denne?", yes_no_dk)
+
+
+# Krav etter landsdel:
+
+landsdel_order <- c(
+  "Oslo og Akershus",
+  "Østlandet ellers",
+  "Agder og Rogaland",
+  "Vestlandet",
+  "Trøndelag",
+  "Nord-Norge"
+)
+
+q16b_landsdel <- grouped_single_result(
+  data = dt,
+  variable = "q16b",
+  group = "landsdel",
+  labels = yes_no_dk,
+  response_order = c(
+    "Ja",
+    "Nei",
+    "Vet ikke"
+  ),
+  group_order = landsdel_order,
+  figure_response = "Ja",
+  title = paste0(
+    "Kommuner som ivaretar kravet til oversikt over ",
+    "helsetilstanden og påvirkningsfaktorer"
+  ),
+  subtitle = "Andel som svarte Ja, etter landsdel",
+  min_n = 1L,
+  sort_figure = "group_order"
+)
+
+print_grouped_single(
+  q16b_landsdel,
+  table_caption = paste0(
+    "Ivaretar kommunen kravet til oversikt over ",
+    "helsetilstanden og påvirkningsfaktorer, etter landsdel"
+  )
+)
+
+
+# Krav etter kommunestørrelse: 
+
+
+q16b_liten <- grouped_single_result(
+  data = dt,
+  variable = "q16b",
+  group = "liten",
+  labels = yes_no_dk,
+  response_order = c(
+    "Ja",
+    "Nei",
+    "Vet ikke"
+  ),
+  figure_response = "Ja",
+  title = paste0(
+    "Kommuner som ivaretar kravet til oversikt over ",
+    "helsetilstanden og påvirkningsfaktorer"
+  ),
+  subtitle = "Andel som svarte Ja, etter kommunestørrelse",
+  min_n = 1L,
+)
+
+print_grouped_single(
+  q16b_liten,
+  table_caption = paste0(
+    "Ivaretar kommunen kravet til oversikt over ",
+    "helsetilstanden og påvirkningsfaktorer, etter kommunestørrelse"
+  )
+)
+
+
+
+```
+
 
 # Oversikt over helsetilstand og påvirkningsfaktorer
 
 ```{r}
 #| results: asis
-report_single("q16b", "1a. Ivaretar kommunen kravet til oversikt?", yes_no_dk)
-report_single(
-  "q16", "1b. Når ble oversiktsdokumentet sist utarbeidet?",
-  c(
-    `1` = "Under utarbeidelse nå", `2` = "2026", `3` = "2025", `4` = "2024",
-    `5` = "2023", `6` = "2022", `7` = "2021", `8` = "2020", `9` = "2019",
-    `10` = "Har ikke utarbeidet et slikt dokument",
-    `Under utarbeidelse nå` = "Under utarbeidelse nå",
-    `Har ikke utarbeidet et slikt dokument` = "Har ikke utarbeidet et slikt dokument"
-  )
+# Når utarbeidet kommunen sist et oversiktsdokument over helsetilstanden i kommunen og faktorer som påvirker denne?
+
+
+# Oversiktsdokument: 
+q16_labels <- c(
+  `1` = "Under utarbeidelse nå",
+  `2` = "2026",
+  `3` = "2025",
+  `4` = "2024",
+  `5` = "2023",
+  `6` = "2022",
+  `7` = "2021",
+  `8` = "2020",
+  `9` = "2019",
+  `10` = "Har ikke utarbeidet et slikt dokument"
 )
+
+q16_order <- unname(
+  q16_labels
+)
+
+tab_q16 <- single_table(
+  v = "q16",
+  labels = q16_labels
+)
+
+tab_q16[
+  ,
+  Svar := factor(
+    as.character(Svar),
+    levels = q16_order
+  )
+]
+
+setorder(
+  tab_q16,
+  Svar
+)
+
+figur_q16 <- ggplot(
+  copy(tab_q16)[
+    ,
+    Svar := factor(
+      as.character(Svar),
+      levels = rev(q16_order)
+    )
+  ],
+  aes(
+    x = Svar,
+    y = Prosent
+  )
+) +
+  geom_col(
+    fill = "#0067B9",
+    width = 0.72
+  ) +
+  geom_text(
+    aes(
+      label = scales::label_percent(
+        scale = 1,
+        accuracy = 0.1
+      )(Prosent)
+    ),
+    hjust = -0.08,
+    size = 3.6
+  ) +
+  coord_flip(
+    clip = "off"
+  ) +
+  scale_y_continuous(
+    labels = scales::label_percent(
+      scale = 1
+    ),
+    expand = expansion(
+      mult = c(0, 0.16)
+    )
+  ) +
+  labs(
+    title = "1b. Når ble oversiktsdokumentet sist utarbeidet?",
+    x = NULL,
+    y = "Andel"
+  ) +
+  theme(
+    plot.margin = margin(
+      5.5,
+      35,
+      5.5,
+      5.5
+    )
+  )
+
+print(figur_q16)
+
+cat("\n\n")
+
+print(
+  show_table(tab_q16)
+)
+
+# Figur col funker ikke per nå:
+
+# spec_col <- hd_spec(tab_q16, 
+#                    x = "Svar",
+#                    y = "Prosent",
+#                    group = NULL,
+#                    n = "n" )
+# 
+# opts_col <- hd_opts(
+#   title    = "Når ble oversiktsdokumentet sist utarbeidet?",
+#   subtitle = "KFF",
+#   yint = 10,
+#   ylab     = "Prosent"
+# )
+# 
+# hd_make(spec_col, "column", opts_col)
+
+
+
+
+# Lag stolpediagram m/highdir
+# spec_rb <- hd_spec(tab_q16,
+#                     x = "Svar",
+#                     y = "Prosent",
+#                     n = "n" )
+# 
+# opts_rb <- hd_opts(
+#   title    = "Når ble oversiktsdokumentet sist utarbeidet?",
+#   subtitle = "KFF",
+#   ylab     = "Prosent",
+#   flip = FALSE
+# )
+# 
+# hd_make(spec_rb, "ranked_bar", opts_rb)
+
+
+
 ```
+
 
 ## Deler av kommunen som er involvert
 
 Bare kommuner med svaralternativ 1 til 9 på spørsmål 1b inngår.
 
 ```{r}
+
 #| results: asis
 f_q2 <- if (var_exists("q16")) {
   q16_value <- as_chr(dt$q16)
@@ -444,7 +1344,82 @@ labs_q2 <- c(
   s_16_10 = "Barnehage", s_16_11 = "Eiendom", s_16_12 = "Miljøteknisk",
   s_16_13 = "Annet"
 )
-report_multi(vars_q2, labs_q2, "2. Deler av kommunen involvert i oversiktsarbeidet", f_q2)
+
+# Behold bare variabler som faktisk finnes i datasettet
+vars_q2_finnes <- intersect(
+  vars_q2,
+  names(dt)
+)
+
+# Tell antall kommuner med verdien 1 i hver variabel
+tab_q2 <- data.table(
+  variabel = vars_q2_finnes,
+  Alternativ = unname(
+    labs_q2[vars_q2_finnes]
+  ),
+  Antall = vapply(
+    vars_q2_finnes,
+    function(v) {
+
+      z <- dt[[v]]
+
+      # Hvis variabelen er haven_labelled,
+      # brukes de underliggende kodeverdiene
+      if (inherits(z, "haven_labelled")) {
+        z <- unclass(z)
+      }
+
+      # Gjør faktorer og tekstverdier om til tekst
+      # før sammenligning med koden 1
+      z <- trimws(
+        as.character(z)
+      )
+
+      # Tell bare verdier som er nøyaktig lik 1
+      sum(
+        !is.na(z) & z == "1"
+      )
+    },
+    integer(1)
+  )
+)
+
+# Sorter fra høyest til lavest antall
+setorder(
+  tab_q2,
+  -Antall,
+  Alternativ
+)
+
+# Lag stolpediagram m/highdir
+spec_rb <- hd_spec(tab_q2, 
+                    x = "Alternativ",
+                    y = "Antall")
+
+opts_rb <- hd_opts(
+  title    = "Deler av kommunen som er involvert i arbeidet med oversiktsdokument",
+  subtitle = "KFF",
+  ylab     = "Antall",
+  flip = TRUE
+)
+
+hd_make(spec_rb, "ranked_bar", opts_rb)
+
+# Vis tabellen
+kable(
+  tab_q2[, .(Alternativ, Antall)],
+  col.names = c(
+    "Del av kommunen",
+    "Antall kommuner"
+  ),
+  align = c("l", "r"),
+  caption = paste0(
+    "Deler av kommunen som er involvert i arbeidet ",
+    "med oversiktsdokumentet"
+  )
+)
+
+
 ```
 
 # Interkommunalt samarbeid
@@ -454,23 +1429,173 @@ report_multi(vars_q2, labs_q2, "2. Deler av kommunen involvert i oversiktsarbeid
 report_single("q2_1", "3a. Samarbeider kommunen med andre kommuner?", yes_no)
 
 f_q3b <- if (var_exists("q2_1")) is_yes(dt$q2_1) else rep(FALSE, nrow(dt))
-vars_q3b <- find_multi("q2_2")
+
+vars_q3b <- c("q2_2_1", "q2_2_2", "q2_2_3", "q2_2_4")
+
 labs_q3b <- c(
   q2_2_1 = "Folkehelsearbeid", q2_2_2 = "Tilsyn",
   q2_2_3 = "Beredskap", q2_2_4 = "Kommuneoverlegefunksjonen"
 )
 
-if (length(vars_q3b) > 0L) {
-  report_multi(vars_q3b, labs_q3b, "3b. Områder det samarbeides om", f_q3b)
-} else {
-  report_single(
-    "q2_2", "3b. Områder det samarbeides om",
-    c(`1` = "Folkehelsearbeid", `2` = "Tilsyn", `3` = "Beredskap", `4` = "Kommuneoverlegefunksjonen"),
-    f_q3b,
-    "Kontroller om flersvar er eksportert som én eller flere kolonner"
+vars_q3b_finnes <- intersect(
+  vars_q3b,
+  names(dt)
+)
+
+# Tell antall kommuner med verdien 1 i hver variabel
+tab_q3b <- data.table(
+  variabel = vars_q3b_finnes,
+  Alternativ = unname(
+    labs_q3b[vars_q3b_finnes]
+  ),
+  Antall = vapply(
+    vars_q3b_finnes,
+    function(v) {
+
+      z <- dt[[v]]
+
+      # Hvis variabelen er haven_labelled,
+      # brukes de underliggende kodeverdiene
+      if (inherits(z, "haven_labelled")) {
+        z <- unclass(z)
+      }
+
+      # Gjør faktorer og tekstverdier om til tekst
+      # før sammenligning med koden 1
+      z <- trimws(
+        as.character(z)
+      )
+
+      # Tell bare verdier som er nøyaktig lik 1
+      sum(
+        !is.na(z) & z == "1"
+      )
+    },
+    integer(1)
   )
-}
+)
+
+
+# Lag stolpediagram m/highdir
+spec_rb <- hd_spec(tab_q3b, 
+                    x = "Alternativ",
+                    y = "Antall")
+
+opts_rb <- hd_opts(
+  title    = "Områder det samarbeides om",
+  subtitle = "KFF",
+  ylab     = "Antall",
+  flip = TRUE
+)
+
+hd_make(spec_rb, "ranked_bar", opts_rb)
+
+
+# Vis tabellen
+kable(
+  tab_q3b[, .(Alternativ, Antall)],
+  col.names = c(
+    "Samarbeider om",
+    "Antall kommuner"
+  ),
+  align = c("l", "r"),
+  caption = paste0(
+    "Områder det samarbeides om ",
+    "flere svar mulig"
+  )
+)
+
+
+# Variabel som sier antall kommuner som sammarbeider om 1 - 2 - 3 - 4 av punktene.
+    # Hvis alle 4 == NA, blir total NA. 
+  
+vars <- c("q2_2_1", "q2_2_2", "q2_2_3", "q2_2_4")
+
+dt[, q2_1_tot := fifelse(
+  rowSums(!is.na(.SD)) == 0,
+  NA_real_,
+  rowSums(.SD, na.rm = TRUE)
+), .SDcols = vars]
+  
+
+tab_q2_1_tot <- table(
+  dt$q2_1_tot[
+    !is.na(dt$q2_1_tot)
+  ]
+)
+
+knitr::kable(
+  as.data.frame(tab_q2_1_tot),
+  col.names = c(
+    "Samarbeidsområder (antall)",
+    "Antall kommuner"
+  ),
+  align = c("l", "r"),
+  caption = "Svarfordeling for q2_1_tot"
+)
+
 ```
+
+
+## Samarbeid etter kommunestørrelse og fylke
+
+```{r}
+#| results: asis
+## Kommunestørrelse
+
+q2_1_liten <- grouped_single_result(
+  data = dt,
+  variable = "q2_1",
+  group = "liten",
+  labels = yes_no,
+  response_order = c(
+    "Ja",
+    "Nei"
+  ),
+  figure_response = "Ja",
+  title = paste0(
+    "Samarbeider kommunen med andre "
+  ),
+  subtitle = "Andel som svarte Ja, etter kommunestørrelse",
+  min_n = 1L,
+)
+
+print_grouped_single(
+  q2_1_liten,
+  table_caption = paste0(
+    "Samarbeider kommunen med andre",
+    " etter kommunestørrelse"
+  )
+)
+
+## Fylke
+
+q2_1_fylke <- grouped_single_result(
+  data = dt,
+  variable = "q2_1",
+  group = "fylke",
+  labels = yes_no,
+  response_order = c(
+    "Ja",
+    "Nei"
+  ),
+  figure_response = "Ja",
+  title = paste0(
+    "Samarbeider kommunen med andre "
+  ),
+  subtitle = "Andel som svarte Ja, etter fylke",
+  min_n = 1L,
+)
+
+print_grouped_single(
+  q2_1_fylke,
+  table_caption = paste0(
+    "Samarbeider kommunen med andre",
+    " etter kommunestørrelse"
+  )
+)
+```
+
 
 # Største folkehelseutfordringer og prioriterte tiltak
 
@@ -494,47 +1619,151 @@ vars_4b <- paste0("s_29_", 1:25)
 labs_4a <- setNames(unname(challenge_labels), vars_4a)
 labs_4b <- setNames(unname(challenge_labels), vars_4b)
 
-report_multi(
-  vars_4a, labs_4a, "4a. Kommunenes største folkehelseutfordringer",
-  note = "Inntil fem svar, med maksimalt to helsetilstandsalternativer"
+# Hovedutfordringer
+# Tell antall kommuner med verdien 1 i hver variabel 
+tab_4a <- data.table(
+  variabel = vars_4a,
+  Alternativ = unname(
+    labs_4a[vars_4a]
+  ),
+  Antall = vapply(
+    vars_4a,
+    function(v) {
+
+      z <- dt[[v]]
+
+      # Hvis variabelen er haven_labelled,
+      # brukes de underliggende kodeverdiene
+      if (inherits(z, "haven_labelled")) {
+        z <- unclass(z)
+      }
+
+      # Gjør faktorer og tekstverdier om til tekst
+      # før sammenligning med koden 1
+      z <- trimws(
+        as.character(z)
+      )
+
+      # Tell bare verdier som er nøyaktig lik 1
+      sum(
+        !is.na(z) & z == "1"
+      )
+    },
+    integer(1)
+  )
 )
-report_multi(
-  vars_4b, labs_4b, "4b. Områder der tiltak er prioritert",
-  note = "Inntil fem svar, med maksimalt to helsetilstandsalternativer"
+
+
+# Sorter fra høyest til lavest antall
+setorder(
+  tab_4a,
+  -Antall,
+  Alternativ
 )
+
+# Lag stolpediagram m/highdir
+spec_rb <- hd_spec(tab_4a, 
+                    x = "Alternativ",
+                    y = "Antall")
+
+opts_rb <- hd_opts(
+  title    = "Største folkehelseutfordringer",
+  subtitle = "KFF",
+  ylab     = "Antall",
+  flip = TRUE
+)
+
+hd_make(spec_rb, "ranked_bar", opts_rb)
+
+
+# Vis tabellen
+kable(
+  tab_4a[, .(Alternativ, Antall)],
+  col.names = c(
+    "Hovedutfordringer",
+    "Antall kommuner"
+  ),
+  align = c("l", "r"),
+  caption = paste0(
+    "Kommunenes største folkehelseutfordringer",
+    "(inntil fem svar, med maksimalt to helsetilstandsalternativer)"
+  )
+)
+
+# Prioriterte tiltak:
+
+# Tell antall kommuner med verdien 1 i hver variabel 
+tab_4b <- data.table(
+  variabel = vars_4b,
+  Alternativ = unname(
+    labs_4b[vars_4b]
+  ),
+  Antall = vapply(
+    vars_4b,
+    function(v) {
+
+      z <- dt[[v]]
+
+      # Hvis variabelen er haven_labelled,
+      # brukes de underliggende kodeverdiene
+      if (inherits(z, "haven_labelled")) {
+        z <- unclass(z)
+      }
+
+      # Gjør faktorer og tekstverdier om til tekst
+      # før sammenligning med koden 1
+      z <- trimws(
+        as.character(z)
+      )
+
+      # Tell bare verdier som er nøyaktig lik 1
+      sum(
+        !is.na(z) & z == "1"
+      )
+    },
+    integer(1)
+  )
+)
+
+
+# Sorter fra høyest til lavest antall
+setorder(
+  tab_4b,
+  -Antall,
+  Alternativ
+)
+
+# Lag stolpediagram m/highdir
+spec_rb <- hd_spec(tab_4b, 
+                    x = "Alternativ",
+                    y = "Antall")
+
+opts_rb <- hd_opts(
+  title    = "Områder med prioriterte tiltak",
+  subtitle = "KFF",
+  ylab     = "Antall",
+  flip = TRUE
+)
+
+hd_make(spec_rb, "ranked_bar", opts_rb)
+
+
+# Vis tabellen
+kable(
+  tab_4b[, .(Alternativ, Antall)],
+  col.names = c(
+    "Prioriterte tiltak",
+    "Antall kommuner"
+  ),
+  align = c("l", "r"),
+  caption = paste0(
+    "Områder der tiltak er prioritert",
+    "(inntil fem svar, med maksimalt to helsetilstandsalternativer)"
+  )
+)
+
+
 ```
-
-## Samsvar mellom utfordringer og tiltak
-
-```{r}
-#| label: samsvar
-pairs <- data.table(
-  i = 1:24,
-  utfordring = vars_4a[1:24],
-  tiltak = vars_4b[1:24],
-  Tema = unname(challenge_labels[as.character(1:24)])
-)
-pairs <- pairs[utfordring %in% names(dt) & tiltak %in% names(dt)]
-
-if (nrow(pairs) > 0L) {
-  match_tab <- pairs[, {
-    u <- as_checked(dt[[utfordring]])
-    t <- as_checked(dt[[tiltak]])
-    den <- sum(u, na.rm = TRUE)
-    both <- sum(u & t, na.rm = TRUE)
-    .(
-      Identifisert_n = den,
-      Tiltak_blant_identifiserte_n = both,
-      Prosent = if (den > 0L) 100 * both / den else NA_real_
-    )
-  }, by = Tema]
-  print(show_table(match_tab[order(-Identifisert_n)]))
-} else {
-  cat("> Ingen komplette variabelpar for utfordring og tiltak ble funnet.\n")
-}
-```
-
-> Tabellen er deskriptiv. Den viser hvor ofte samme tema er identifisert og prioritert i samme kommune, men sier ikke om tiltaket er gjennomført eller har effekt.
 
 # Planstrategi og planer
 
@@ -552,6 +1781,83 @@ report_single(
 )
 ```
 
+## Er hovedutfordringene drøftet i kommunal planstrategi? Etter landsdel og kommunestørrelse
+
+```{r}
+#| results: asis
+
+# Krav etter landsdel:
+
+landsdel_order <- c(
+  "Oslo og Akershus",
+  "Østlandet ellers",
+  "Agder og Rogaland",
+  "Vestlandet",
+  "Trøndelag",
+  "Nord-Norge"
+)
+
+q18_landsdel <- grouped_single_result(
+  data = dt,
+  variable = "q18",
+  group = "landsdel",
+  labels = yes_no_dk,
+  response_order = c(
+    "Ja",
+    "Nei",
+    "Vet ikke"
+  ),
+  group_order = landsdel_order,
+  figure_response = "Ja",
+  title = paste0(
+    "Er hovedutfordringene drøftet i kommunal planstrategi? "
+  ),
+  subtitle = "Andel som svarte Ja, etter landsdel",
+  min_n = 1L,
+  sort_figure = "group_order"
+)
+
+print_grouped_single(
+  q18_landsdel,
+  table_caption = paste0(
+    "Er hovedutfordringene drøftet i kommunal planstrategi? ",
+    "etter landsdel"
+  )
+)
+
+
+# Krav etter kommunestørrelse: 
+
+q18_liten <- grouped_single_result(
+  data = dt,
+  variable = "q18",
+  group = "liten",
+  labels = yes_no_dk,
+  response_order = c(
+    "Ja",
+    "Nei",
+    "Vet ikke"
+  ),
+  figure_response = "Ja",
+  title = paste0(
+    "Er hovedutfordringene drøftet i kommunal planstrategi?  "
+  ),
+  subtitle = "Andel som svarte Ja, etter kommunestørrelse",
+  min_n = 1L,
+)
+
+print_grouped_single(
+  q18_liten,
+  table_caption = paste0(
+    "Er hovedutfordringene drøftet i kommunal planstrategi? ",
+    "helsetilstanden og påvirkningsfaktorer, etter kommunestørrelse"
+  )
+)
+
+```
+
+## Planer hvor kommunen har fastsatt mål og strategier som svar på folkehelseutfordringene
+
 ```{r}
 #| results: asis
 vars_q8 <- paste0("q20_", 1:16)
@@ -567,8 +1873,74 @@ labs_q8 <- setNames(
   ),
   vars_q8
 )
-report_multi(vars_q8, labs_q8, "8. Planer med mål og strategier for folkehelseutfordringene")
+
+
+# Behold bare variabler som faktisk finnes i datasettet
+vars_q8_finnes <- intersect(
+  vars_q8,
+  names(dt)
+)
+
+# Tell antall kommuner med verdien 1 i hver variabel
+tab_q8 <- data.table(
+  variabel = vars_q8_finnes,
+  Alternativ = unname(
+    labs_q8[vars_q8_finnes]
+  ),
+  Antall = vapply(
+    vars_q8_finnes,
+    function(v) {
+
+      z <- dt[[v]]
+
+      # Hvis variabelen er haven_labelled,
+      # brukes de underliggende kodeverdiene
+      if (inherits(z, "haven_labelled")) {
+        z <- unclass(z)
+      }
+
+      # Gjør faktorer og tekstverdier om til tekst
+      # før sammenligning med koden 1
+      z <- trimws(
+        as.character(z)
+      )
+
+      # Tell bare verdier som er nøyaktig lik 1
+      sum(
+        !is.na(z) & z == "1"
+      )
+    },
+    integer(1)
+  )
+)
+
+# Sorter fra høyest til lavest antall
+setorder(
+  tab_q8,
+  -Antall,
+  Alternativ
+)
+
+# Lag stolpediagram
+
+
+# Vis tabellen
+kable(
+  tab_q8[, .(Alternativ, Antall)],
+  col.names = c(
+    "Plan / strategi",
+    "Antall kommuner"
+  ),
+  align = c("l", "r"),
+  caption = paste0(
+    "Planer med mål og strategier for folkehelseutfordringene.",
+    " flere kryss mulig"
+  )
+)
+
 ```
+
+
 
 # Samiske folkehelseutfordringer
 
@@ -579,6 +1951,18 @@ report_single(
   "7a. Oppmerksomhet på særskilte folkehelseutfordringer i den samiske befolkningen",
   yes_no_dk_na
 )
+
+# Kommuner som har svart "nei" eller "ikke aktuelt" i fylkene Nordland, Trøndelad, Tromst og Finnmark:
+dt[
+  fylke %chin% c(
+    "Nordland - Nordlánnda",
+    "Trøndelag - Trööndelage",
+    "Troms - Romsa - Tromssa",
+    "Finnmark - Finnmárku - Finmarkku"
+  ) &
+  q23_1 %in% c(2, 4),
+  sort(unique(Kommunenavn2026))
+]
 
 f_q7b <- if (var_exists("q23_1")) is_yes(dt$q23_1) else rep(FALSE, nrow(dt))
 if (var_exists("q23_2")) {
@@ -592,6 +1976,64 @@ if (var_exists("q23_2")) {
 ```
 
 > Rå fritekst bør ikke publiseres ukritisk. Konkrete beskrivelser kan identifisere kommune eller enkeltperson.
+
+## Kommunenenes oppmerksomhet på særskilte folkehelseutfordringer i den samiske befolkningen 
+
+```{r}
+#| label: kommuner-q23-1-nei
+#| echo: false
+#| results: asis
+
+q23_1_kode <- dt[["q23_1"]]
+
+# Bruk underliggende kode dersom variabelen er haven_labelled
+if (inherits(q23_1_kode, "haven_labelled")) {
+  q23_1_kode <- unclass(q23_1_kode)
+}
+
+kommuner_q23_1_nei <- dt[
+  !is.na(q23_1_kode) &
+    as.character(q23_1_kode) == "2" &
+    !is.na(Kommunenavn2026) &
+    trimws(as.character(Kommunenavn2026)) != "",
+  .(
+    Kommune = trimws(
+      as.character(Kommunenavn2026)
+    )
+  )
+]
+
+# Én rad per kommune
+kommuner_q23_1_nei <- unique(
+  kommuner_q23_1_nei
+)
+
+# Alfabetisk rekkefølge
+data.table::setorder(
+  kommuner_q23_1_nei,
+  Kommune
+)
+
+cat(
+  "**Antall kommuner som svarte Nei: ",
+  nrow(kommuner_q23_1_nei),
+  "**\n\n",
+  sep = ""
+)
+
+print(
+  knitr::kable(
+    kommuner_q23_1_nei,
+    col.names = "Kommune",
+    align = "l",
+    caption = paste0(
+      "Kommuner som svarte Nei på spørsmål om særskilte ",
+      "folkehelseutfordringer i den samiske befolkningen"
+    )
+  )
+)
+```
+
 
 # Evaluering, læring og forbedring
 
@@ -617,6 +2059,75 @@ print(show_table(free_text_counts))
 
 > Fritekstsvar bør kodes tematisk i en separat, dokumentert analyse. Rapportér temaer med antall kommuner og anonymiser eventuelle sitater.
 
+
+## Etter landsdel og kommunestørrelse
+
+
+```{r}
+#| results: asis
+
+# Krav etter landsdel:
+
+q21_landsdel <- grouped_single_result(
+  data = dt,
+  variable = "q21",
+  group = "landsdel",
+  labels = yes_no_dk,
+  response_order = c(
+    "Ja",
+    "Nei",
+    "Vet ikke"
+  ),
+  group_order = landsdel_order,
+  figure_response = "Ja",
+  title = paste0(
+    "Har kommunen gjennomgått og vurdert folkehelsearbeidet i fireårsperioden? "
+  ),
+  subtitle = "Andel som svarte Ja, etter landsdel",
+  min_n = 1L,
+  sort_figure = "group_order"
+)
+
+print_grouped_single(
+  q21_landsdel,
+  table_caption = paste0(
+    "Har kommunen gjennomgått og vurdert folkehelsearbeidet i fireårsperioden? ",
+    "etter landsdel"
+  )
+)
+
+
+# Krav etter kommunestørrelse: 
+
+q21_liten <- grouped_single_result(
+  data = dt,
+  variable = "q21",
+  group = "liten",
+  labels = yes_no_dk,
+  response_order = c(
+    "Ja",
+    "Nei",
+    "Vet ikke"
+  ),
+  figure_response = "Ja",
+  title = paste0(
+    "Har kommunen gjennomgått og vurdert folkehelsearbeidet i fireårsperioden? "
+  ),
+  subtitle = "Andel som svarte Ja, etter kommunestørrelse",
+  min_n = 1L,
+)
+
+print_grouped_single(
+  q21_liten,
+  table_caption = paste0(
+    "Har kommunen gjennomgått og vurdert folkehelsearbeidet i fireårsperioden? ",
+    "etter kommunestørrelse"
+  )
+)
+
+```
+
+
 # Barrierer og utfordringer
 
 ```{r}
@@ -630,9 +2141,222 @@ vars_10b <- paste0("q10b_", 1:6)
 labs_10a <- setNames(barrier_text, vars_10a)
 labs_10b <- setNames(barrier_text, vars_10b)
 
-report_multi(vars_10a, labs_10a, "10a. Barrierer for systematisk folkehelsearbeid")
-report_multi(vars_10b, labs_10b, "10b. Barrierer for kunnskapsbasert og langsiktig folkehelsearbeid")
+
+# Barrierer/utfordringer for et systematisk folkehelsearbeid
+# Behold bare variabler som faktisk finnes i datasettet
+vars_10a_finnes <- intersect(
+  vars_10a,
+  names(dt)
+)
+
+# Tell antall kommuner med verdien 1 i hver variabel
+tab_10a <- data.table(
+  variabel = vars_10a_finnes,
+  Alternativ = unname(
+    labs_10a[vars_10a_finnes]
+  ),
+  Antall = vapply(
+    vars_10a_finnes,
+    function(v) {
+
+      z <- dt[[v]]
+
+      # Hvis variabelen er haven_labelled,
+      # brukes de underliggende kodeverdiene
+      if (inherits(z, "haven_labelled")) {
+        z <- unclass(z)
+      }
+
+      # Gjør faktorer og tekstverdier om til tekst
+      # før sammenligning med koden 1
+      z <- trimws(
+        as.character(z)
+      )
+
+      # Tell bare verdier som er nøyaktig lik 1
+      sum(
+        !is.na(z) & z == "1"
+      )
+    },
+    integer(1)
+  )
+)
+
+# Sorter fra høyest til lavest antall
+setorder(
+  tab_10a,
+  -Antall,
+  Alternativ
+)
+
+# Lag stolpediagram m/highdir
+spec_rb <- hd_spec(tab_10a, 
+                    x = "Alternativ",
+                    y = "Antall")
+
+opts_rb <- hd_opts(
+  title    = "Barrierer for systematisk folkehelsearbeid",
+  subtitle = "KFF",
+  ylab     = "Antall",
+  flip = TRUE
+)
+
+hd_make(spec_rb, "ranked_bar", opts_rb)
+
+
+
+# Vis tabellen
+kable(
+  tab_10a[, .(Alternativ, Antall)],
+  col.names = c(
+    "Barriere/utfordring",
+    "Antall kommuner"
+  ),
+  align = c("l", "r"),
+  caption = paste0(
+    "Barrierer for systematisk folkehelsearbeid"
+  )
+)
+
+
+# Variabel som sier antall kommuner som har 1-6 utfordringer av punktene.
+    # Hvis alle 6 == NA, blir total NA. 
+  
+vars <- c("q10a_1", "q10a_2", "q10a_3", "q10a_4", "q10a_5", "q10a_6")
+
+dt[, q10a_tot := fifelse(
+  rowSums(!is.na(.SD)) == 0,
+  NA_real_,
+  rowSums(.SD, na.rm = TRUE)
+), .SDcols = vars]
+  
+
+tab_q10a_tot <- table(
+  dt$q10a_tot[
+    !is.na(dt$q10a_tot)
+  ]
+)
+
+knitr::kable(
+  as.data.frame(tab_q10a_tot),
+  col.names = c(
+    "barrierer systematisk folkehelsearbeid (antall)",
+    "Antall kommuner"
+  ),
+  align = c("l", "r"),
+  caption = "Svarfordeling for q10a_tot"
+)
+
+
+
+# Barrierer/utfordringer for å jobbe kunnskapsbasert
+# Behold bare variabler som faktisk finnes i datasettet
+vars_10b_finnes <- intersect(
+  vars_10b,
+  names(dt)
+)
+
+# Tell antall kommuner med verdien 1 i hver variabel
+tab_10b <- data.table(
+  variabel = vars_10b_finnes,
+  Alternativ = unname(
+    labs_10b[vars_10b_finnes]
+  ),
+  Antall = vapply(
+    vars_10b_finnes,
+    function(v) {
+
+      z <- dt[[v]]
+
+      # Hvis variabelen er haven_labelled,
+      # brukes de underliggende kodeverdiene
+      if (inherits(z, "haven_labelled")) {
+        z <- unclass(z)
+      }
+
+      # Gjør faktorer og tekstverdier om til tekst
+      # før sammenligning med koden 1
+      z <- trimws(
+        as.character(z)
+      )
+
+      # Tell bare verdier som er nøyaktig lik 1
+      sum(
+        !is.na(z) & z == "1"
+      )
+    },
+    integer(1)
+  )
+)
+
+# Sorter fra høyest til lavest antall
+setorder(
+  tab_10b,
+  -Antall,
+  Alternativ
+)
+
+# Lag stolpediagram m/highdir
+spec_rb <- hd_spec(tab_10b, 
+                    x = "Alternativ",
+                    y = "Antall")
+
+opts_rb <- hd_opts(
+  title    = "Barrierer for kunnskapsbasert og langsiktig folkehelsearbeid",
+  subtitle = "KFF",
+  ylab     = "Antall",
+  flip = TRUE
+)
+
+hd_make(spec_rb, "ranked_bar", opts_rb)
+
+
+# Vis tabellen
+kable(
+  tab_10b[, .(Alternativ, Antall)],
+  col.names = c(
+    "Barriere/utfordring",
+    "Antall kommuner"
+  ),
+  align = c("l", "r"),
+  caption = paste0(
+    "Barrierer for kunnskapsbasert og langsiktig folkehelsearbeid"
+  )
+)
+
+# Variabel som sier antall kommuner som har 1-6 utfordringer av punktene.
+    # Hvis alle 6 == NA, blir total NA. 
+  
+vars <- c("q10b_1", "q10b_2", "q10b_3", "q10b_4", "q10b_5", "q10b_6")
+
+dt[, q10b_tot := fifelse(
+  rowSums(!is.na(.SD)) == 0,
+  NA_real_,
+  rowSums(.SD, na.rm = TRUE)
+), .SDcols = vars]
+  
+
+tab_q10b_tot <- table(
+  dt$q10b_tot[
+    !is.na(dt$q10b_tot)
+  ]
+)
+
+knitr::kable(
+  as.data.frame(tab_q10b_tot),
+  col.names = c(
+    "barrierer jobbe kunnskapsbasert og langsiktig (antall)",
+    "Antall kommuner"
+  ),
+  align = c("l", "r"),
+  caption = "Svarfordeling for q10b_tot"
+)
+
+
+
 ```
+
+
 
 # Nasjonale resultater etter kommunekjennetegn
 

@@ -1,7 +1,7 @@
 ---
 title: "KFF 2026"
 subtitle: "Rapport om funn fra KFF"
-author: "Bente Øvrebø"
+author: "Hdir"
 date: 1.07.2026
   html:
     toc: true
@@ -466,6 +466,696 @@ dtx,
 
 ```
 
+# Kart med svarprosent
+
+```{r }
+
+# Først Kode for geom_map:
+# R/geom-map.R  -- Choropleth map geometry
+#
+# Data contract
+# -------------
+# hd_spec(data, x = "hc-key", y = "value")
+#   x  -- column whose values match the GeoJSON feature property used as the
+#          join key (e.g. "hc-key" for Highcharts map collections, or any
+#          property name present in the GeoJSON features).
+#   y  -- column whose numeric values drive the choropleth fill colour.
+#
+# Required geom arg:
+#   map_src  -- URL string pointing to a GeoJSON file.
+#               Highcharts map collection base URL:
+#               https://raw.githubusercontent.com/highcharts/map-collection-dist/
+#               refs/heads/master/countries/no/no-all-all.geo.json
+#
+# Color convention
+# ----------------
+# Choropleth maps use a SEQUENTIAL two-color gradient (low -> high), not the
+# categorical palette used by line/column/bar geoms.
+#
+# Resolution order for low_col / high_col:
+#   1. Explicit geom args:  hd_geom_map(low_col = "#fff", high_col = "#025169")
+#   2. opts$colors as a 2-element vector: hd_opts(colors = c("#fff", "#025169"))
+#   3. Built-in highdir brand defaults: "#C6DBEF" (light) -> "#025169" (dark)
+#
+# skip_base_fig = TRUE
+# --------------------
+# Maps have no x/y axes.  The engine bypasses base_fig() and gives both
+# hc_map and gg_map a blank canvas to build from scratch, exactly like venn
+# and ranked_bar.
+#
+# modes 
+# --------
+# interactive: native Highcharts Maps series.  Fetches GeoJSON inside hc_map
+#              so the user never calls fromJSON().
+# static:      uses sf + geom_sf (both in Suggests).  Degrades gracefully
+#              with a message if sf is not installed.
+#
+# Norway convenience helper
+# -------------------------
+# hd_map_no() returns the standard URL for the Norwegian municipality /
+# county map from the Highcharts map collection, so users do not need to
+# remember the raw GitHub URL.
+
+
+# =============================================================================
+# Default sequential palette for choropleth maps
+# =============================================================================
+
+.map_default_cols <- c(low = "#C6DBEF", high = "#025169")
+
+#' Resolve the two choropleth colours (low, high) for a map geom
+#'
+#' Priority: explicit args > opts$colors (2-element) > built-in defaults.
+#'
+#' @keywords internal
+.resolve_map_colors <- function(low_col, high_col, opts) {
+
+  # 1. Explicit geom args take priority
+  if (!is.null(low_col)  && nzchar(low_col)  &&
+      !is.null(high_col) && nzchar(high_col))
+    return(c(low = low_col, high = high_col))
+
+  # 2. opts$colors as a 2-element vector
+  if (!is.null(opts$colors) && length(opts$colors) >= 2L)
+    return(c(low = opts$colors[[1L]], high = opts$colors[[2L]]))
+
+  # 3. Built-in highdir brand sequential palette
+  .map_default_cols
+}
+
+
+# =============================================================================
+# GeoJSON helpers
+# =============================================================================
+
+#' Filter a parsed GeoJSON to polygon features only
+#'
+#' Keeps only Polygon and MultiPolygon features - strips Point, LineString
+#' etc. that Highcharts Maps and sf cannot render as choropleth areas.
+#'
+#' @keywords internal
+.filter_geojson_polygons <- function(geojson) {
+  poly_types          <- c("Polygon", "MultiPolygon")
+  geojson$features    <- Filter(
+    function(f) f$geometry$type %in% poly_types,
+    geojson$features
+  )
+  geojson
+}
+
+
+#' Validate a map source argument
+#'
+#' Returns TRUE when `x` is:
+#'   - a non-empty character string (URL or local file path), or
+#'   - a list with a `$features` element (pre-parsed GeoJSON FeatureCollection)
+#'
+#' @keywords internal
+.is_valid_map_src <- function(x) {
+  if (is.character(x) && length(x) == 1L && nzchar(x))
+    return(TRUE)
+  if (is.list(x) && !is.null(x$features))
+    return(TRUE)
+  FALSE
+}
+
+
+#' Resolve a GeoJSON source to a filtered list ready for rendering
+#'
+#' Accepts three forms of input and returns a consistently filtered GeoJSON
+#' list - regardless of which form the user supplied:
+#'
+#' \describe{
+#'   \item{Character string (URL)}{`"https://..."` - fetched with
+#'     `jsonlite::fromJSON()`.  Results are memoised for the R session so
+#'     repeated calls to the same URL do not re-download.}
+#'   \item{Character string (file path)}{`"/path/to/file.geojson"` -
+#'     read from disk with `jsonlite::fromJSON()`.  Same function, same
+#'     memoisation.}
+#'   \item{Pre-parsed list}{A GeoJSON list already in memory (e.g. the
+#'     output of `jsonlite::fromJSON(..., simplifyVector = FALSE)`).
+#'     Polygon filtering is applied but no download or disk read occurs.}
+#' }
+#'
+#' @param map_src A URL string, file path string, or parsed GeoJSON list.
+#' @return A list (parsed GeoJSON) containing only polygon features.
+#' @keywords internal
+.resolve_geojson <- local({
+
+  cache <- list()   # memoisation for string sources (URL or path)
+
+  function(map_src) {
+
+    # -- Pre-parsed list -------------------------------------------------------
+    # User already called fromJSON() or loaded the GeoJSON themselves.
+    # No download needed - just filter the polygon features and return.
+    if (is.list(map_src)) {
+
+      if (is.null(map_src$features))
+        stop(
+          "hd_geom_map(): the GeoJSON list passed to `map_src` has no ",
+          "'features' element.  Ensure it is a valid GeoJSON ",
+          "FeatureCollection.",
+          call. = FALSE
+        )
+
+      return(.filter_geojson_polygons(map_src))
+    }
+
+    # -- String source (URL or local file path) --------------------------------
+    key <- map_src
+
+    if (!is.null(cache[[key]]))
+      return(cache[[key]])
+
+    if (!requireNamespace("jsonlite", quietly = TRUE))
+      stop(
+        "hd_geom_map() requires the 'jsonlite' package to load GeoJSON.\n",
+        "Install it: install.packages('jsonlite')",
+        call. = FALSE
+      )
+
+    geojson <- tryCatch(
+      jsonlite::fromJSON(map_src, simplifyVector = FALSE),
+      error = function(e)
+        stop(
+          "hd_geom_map(): failed to load GeoJSON from:\n  ", map_src,
+          "\n  ", conditionMessage(e),
+          call. = FALSE
+        )
+    )
+
+    result       <- .filter_geojson_polygons(geojson)
+    cache[[key]] <<- result
+    result
+  }
+})
+
+# =============================================================================
+# gg_map  --  ggplot2 mode 
+# =============================================================================
+
+#' ggplot2 Map Geom Function
+#'
+#' Renders a choropleth map using [sf::read_sf()] and [ggplot2::geom_sf()].
+#' Requires the `sf` package (in Suggests).  Returns a message and a blank
+#' grob if `sf` is not installed.
+#'
+#' @param spec       An [hd_spec()] object.
+#' @param opts       An [hd_opts()] object.
+#' @param geom_params Named list.  Required: `map_src`.  Optional: `join_by`,
+#'   `low_col`, `high_col`, `value_suffix`.
+#' @param ...        Unused.
+#'
+#' @return A ggplot object (via the `__ggplot__` sentinel).
+#' @keywords internal
+gg_map <- function(spec, opts, geom_params, ...) {
+
+  # -- sf availability check ---------------------------------------------------
+  if (!requireNamespace("sf", quietly = TRUE)) {
+    message(
+      "hd_geom_map(): the ggplot2 backend requires the 'sf' package.\n",
+      "Install it: install.packages('sf')\n",
+      "Use backend = 'highcharter' for maps without sf."
+    )
+    return(list(ggplot2::geom_blank()))
+  }
+
+  # -- Args --------------------------------------------------------------------
+  map_src <- geom_params$map_src
+
+  if (!.is_valid_map_src(map_src))
+    stop(
+      "hd_geom_map() requires `map_src` as a URL, file path, or parsed list.",
+      call. = FALSE
+    )
+
+  join_by      <- geom_params$join_by      %||% "hc-key"
+  value_suffix <- geom_params$value_suffix %||% ""
+  low_col      <- geom_params$low_col  %||% NULL
+  high_col     <- geom_params$high_col %||% NULL
+
+  cols <- .resolve_map_colors(low_col, high_col, opts)
+
+  # -- Read spatial data -------------------------------------------------------
+  # sf::read_sf() accepts URLs and local file paths natively.
+  # When map_src is a pre-parsed GeoJSON list, convert it back to a JSON
+  # string first - sf cannot consume an R list directly, but it can parse
+  # a GeoJSON string in memory without writing to disk.
+  sf_src <- if (is.list(map_src)) {
+    if (!requireNamespace("jsonlite", quietly = TRUE))
+      stop(
+        "hd_geom_map(): passing a pre-parsed GeoJSON list to gg_map() ",
+        "requires the 'jsonlite' package.\n",
+        "Install it: install.packages('jsonlite')",
+        call. = FALSE
+      )
+    # Filter polygons first (same as .resolve_geojson does for hc_map),
+    # then serialise to a JSON string that sf::read_sf() can consume.
+    filtered <- .filter_geojson_polygons(map_src)
+    jsonlite::toJSON(filtered, auto_unbox = TRUE)
+  } else {
+    map_src   # URL or file path - sf handles it directly
+  }
+
+  sf_data <- tryCatch(
+    sf::read_sf(sf_src),
+    error = function(e)
+      stop(
+        "hd_geom_map(): failed to read spatial data.\n  ",
+        conditionMessage(e),
+        call. = FALSE
+      )
+  )
+
+  # -- Join user data to spatial features --------------------------------------
+  d      <- spec$data
+  x_col  <- spec$x
+  y_col  <- spec$y
+
+  # Find the matching column in the sf object (usually "hc.key" after sf
+  # normalises the hyphen, or the literal join_by name)
+  sf_key <- join_by
+  # sf replaces hyphens with dots in column names
+  sf_key_clean <- gsub("-", ".", join_by, fixed = TRUE)
+  if (sf_key_clean %in% names(sf_data))
+    sf_key <- sf_key_clean
+
+  # GDAL's GeoJSON reader can silently re-type a purely-numeric-looking string
+  # property (e.g. "0301") as Integer, dropping leading zeros. Re-attach the
+  # join key from the list we already parsed with jsonlite, which never
+  # second-guesses a quoted JSON string's type.
+  if (is.list(map_src)) {
+    orig_keys <- vapply(
+      filtered$features,
+      function(f) {
+        v <- f$properties[[join_by]]
+        if (is.null(v)) NA_character_ else as.character(v)
+      },
+      character(1)
+    )
+    if (length(orig_keys) == nrow(sf_data))
+      sf_data[[sf_key]] <- orig_keys
+  }
+
+  # belt-and-suspenders: guarantee both join columns are the same type
+  sf_data[[sf_key]] <- as.character(sf_data[[sf_key]])
+  d[[x_col]]         <- as.character(d[[x_col]])
+
+  
+  merged <- merge(
+    sf_data,
+    d,
+    by.x = sf_key,
+    by.y = x_col,
+    all.x = TRUE
+  )
+
+  # -- Build ggplot ------------------------------------------------------------
+  p <- ggplot2::ggplot(merged) +
+    ggplot2::geom_sf(
+      ggplot2::aes(fill = .data[[y_col]]),
+      colour    = "white",
+      linewidth = 0.2
+    ) +
+    ggplot2::scale_fill_gradient(
+      low      = cols[["low"]],
+      high     = cols[["high"]],
+      na.value = "#D3D3D3",
+      name     = opts$ylab %||% y_col,
+      labels   = if (nzchar(value_suffix))
+        function(x) paste0(x, value_suffix)
+      else
+        ggplot2::waiver()
+    ) +
+    ggplot2::labs(
+      title    = opts$title    %||% "",
+      subtitle = opts$subtitle %||% "",
+      caption  = opts$caption  %||% ""
+    ) +
+    ggplot2::theme_void() +
+    ggplot2::theme(
+      plot.title      = ggplot2::element_text(hjust = 0,
+                                              face = "bold",
+                                              size = 13),
+      plot.subtitle   = ggplot2::element_text(hjust = 0,
+                                              size = 10,
+                                              colour = "#57606a"),
+      legend.position = "right"
+    )
+
+  # Return via the ggplot inheritance check in the engine
+  # (inherits(layers, "ggplot") -> return directly with gt$theme applied)
+  p
+}
+
+
+# =============================================================================
+# hc_map  --  highcharter mode 
+# =============================================================================
+
+#' Highcharter Map Geom Function
+#'
+#' Adds a choropleth map series to a blank `highchart()` object using
+#' Highcharts Maps.  Not called directly - use [hd_geom_map()] or
+#' `hd_make(..., type = "map", ...)`.
+#'
+#' @section Tooltip format:
+#' The default tooltip shows `{point.name}: {point.value}`.
+#' Override with `geom_params$tooltip_fmt`, e.g.
+#' `"{point.name}: {point.value} %"`.
+#'
+#' @param chart       A blank `highchart()` object (from engine bypass path).
+#' @param spec        An [hd_spec()] object.  `$x` = join-key column,
+#'   `$y` = value column.
+#' @param opts        An [hd_opts()] object.
+#' @param geom_params Named list.  Required: `map_src`.  Optional: `join_by`,
+#'   `series_name`, `value_suffix`, `low_col`, `high_col`, `tooltip_fmt`,
+#'   `nav_enabled`.
+#' @param use_js      Logical. Unused; present for engine-contract consistency.
+#' @param ...         Unused.
+#'
+#' @return The updated `highchart` object.
+#' @keywords internal
+hc_map <- function(chart, spec, opts, geom_params, use_js = TRUE, ...) {
+  
+  # -- Required args -----------------------------------------------------------
+  map_src <- geom_params$map_src
+
+  # map_src accepts a URL string, a local file path, or a pre-parsed GeoJSON
+  # list.  .is_valid_map_src() checks for any of these three forms.
+  if (!.is_valid_map_src(map_src))
+    stop(
+      "hd_geom_map() requires `map_src` as:\n",
+      "  - a URL string:       hd_map_no() or 'https://...'\n",
+      "  - a local file path:  '/path/to/map.geojson'\n",
+      "  - a pre-parsed list:  jsonlite::fromJSON(..., simplifyVector = FALSE)",
+      call. = FALSE
+    )
+
+  # -- Optional args -----------------------------------------------------------
+  join_by      <- geom_params$join_by      %||% "hc-key"
+  series_name  <- geom_params$series_name  %||% opts$ylab %||% spec$y
+  value_suffix <- geom_params$value_suffix %||% ""
+  nav_enabled  <- isTRUE(geom_params$nav_enabled %||% TRUE)
+  tooltip_fmt  <- geom_params$tooltip_fmt  %||%
+    paste0("{point.name}: {point.value}", value_suffix)
+  low_col      <- geom_params$low_col  %||% NULL
+  high_col     <- geom_params$high_col %||% NULL
+
+  # -- Resolve colours ---------------------------------------------------------
+  cols <- .resolve_map_colors(low_col, high_col, opts)
+
+  # -- Resolve GeoJSON ---------------------------------------------------------
+  # Handles URL, local file path, or pre-parsed list transparently.
+  geojson <- .resolve_geojson(map_src)
+
+  # -- Data --------------------------------------------------------------------
+  d      <- spec$data
+  x_col  <- spec$x    # join-key column in the data frame
+  y_col  <- spec$y    # value column
+
+#   # Highcharts expects a list of named lists, one per row.
+#   # The join key must be a top-level property matching `join_by`.
+#   hc_data <- lapply(seq_len(nrow(d)), function(i) {
+#     pt        <- as.list(d[i, , drop = FALSE])
+#     # Ensure the join column is at the expected key name even if the
+#     # data frame column has a different name (rare but defensive)
+#     if (x_col != join_by)
+#       pt[[join_by]] <- pt[[x_col]]
+#     pt[["value"]] <- pt[[y_col]]
+#     pt
+#   })
+
+  if (x_col != join_by)
+    d[[join_by]] <- d[[x_col]]
+  
+  # -- Build chart -------------------------------------------------------------
+  chart |>
+    highcharter::highchart(type = "map") |>
+    highcharter::hc_add_series(
+      type     = "map",
+      mapData  = geojson,
+      data     = d,
+      joinBy   = join_by,
+      value    = "value",
+      name     = series_name
+    ) |>
+    highcharter::hc_colorAxis(
+      minColor = cols[["low"]],
+      maxColor = cols[["high"]]
+    ) |>
+    highcharter::hc_tooltip(
+      pointFormat = tooltip_fmt
+    ) |>
+    highcharter::hc_mapNavigation(
+      enabled         = nav_enabled,
+      enableMouseWheelZoom = nav_enabled
+    ) |>
+    highcharter::hc_title(text    = opts$title    %||% "") |>
+    highcharter::hc_subtitle(text = opts$subtitle %||% "")
+}
+
+
+
+# =============================================================================
+# Public constructor
+# =============================================================================
+
+#' Map (Choropleth) Layer for hd Objects
+#'
+#' Creates a choropleth map layer for use with [hd()] and `+`.
+#' Fetches GeoJSON from `map_src` and joins it to `spec$data` using the
+#' column specified in `spec$x` (the join-key column) and colours regions
+#' by `spec$y` (the value column).
+#'
+#' @section Color resolution:
+#' Two-color sequential gradient for the choropleth fill:
+#' \enumerate{
+#'   \item Explicit `low_col` / `high_col` arguments
+#'   \item `opts$colors` as a 2-element vector (first = low, second = high)
+#'   \item Built-in highdir brand defaults: `"#C6DBEF"` (light) to
+#'     `"#025169"` (dark teal)
+#' }
+#'
+#' @section Norway convenience:
+#' Use [hd_map_no()] to get the standard URL for Norwegian municipality
+#' or county maps from the Highcharts map collection without memorising
+#' the raw GitHub URL.
+#'
+#' @param map_src      **Required.** GeoJSON source in any of three forms:
+#'   \describe{
+#'     \item{URL}{`"https://..."` - fetched with `jsonlite::fromJSON()`.
+#'       Results are cached for the R session.  See [hd_map_no()] for
+#'       Norway maps.}
+#'     \item{Local file path}{`"/path/to/file.geojson"` - read from disk
+#'       with `jsonlite::fromJSON()`.}
+#'     \item{Pre-parsed list}{A GeoJSON list already in memory, e.g. the
+#'       result of `jsonlite::fromJSON(url, simplifyVector = FALSE)`.
+#'       No download or disk read occurs - polygon filtering is applied
+#'       and the list is used directly.}
+#'   }
+#' @param join_by      Character. Property name in the GeoJSON features used
+#'   to join to `spec$x`.  Default `"hc-key"` (standard for Highcharts
+#'   map collections).
+#' @param series_name  Character. Series label in the legend / tooltip.
+#'   Defaults to `opts$ylab` or `spec$y`.
+#' @param value_suffix Character. Suffix appended to values in tooltips and
+#'   legend labels.  E.g. `"%"`.  Default `""`.
+#' @param low_col      Character. Hex colour for the low end of the gradient.
+#'   Default: `"#C6DBEF"`.
+#' @param high_col     Character. Hex colour for the high end of the gradient.
+#'   Default: `"#025169"`.
+#' @param tooltip_fmt  Character. Highcharts tooltip `pointFormat` string.
+#'   Default `"{point.name}: {point.value}"`.
+#' @param nav_enabled  Logical. Enable map pan/zoom controls.  Default `TRUE`.
+#'   Highcharter only.
+#' @param ...          Additional arguments forwarded to [hd_make()].
+#'
+#' @return An S3 object of class `"hd_geom"` for use with `+.hd`.
+#'
+#' @seealso [hd_map_no()], [hd()], [hd_spec()], [hd_opts()]
+#'
+#' @examples
+#' \dontrun{
+#' library(data.table)
+#'
+#' # Norwegian municipality data
+#' set.seed(42)
+#' url <- hd_map_no("municipality")
+#'
+#' # Fetch the keys from the GeoJSON so we can build a matching data frame
+#' geojson  <- jsonlite::fromJSON(url, simplifyVector = FALSE)
+#' features <- Filter(\(x) x$geometry$type %in%
+#'   c("Polygon", "MultiPolygon"), geojson$features)
+#'
+#' df <- data.frame(
+#'   `hc-key` = sapply(features, \(x) x$properties$`hc-key`),
+#'   name     = sapply(features, \(x) x$properties$name %||% NA_character_),
+#'   value    = round(runif(length(features), 10, 100), 1),
+#'   check.names = FALSE
+#' )
+#'
+#' # Dynamic mode
+#' hd(df, x = "hc-key", y = "value", mode = "dynamic") +
+#'   hd_geom_map(map_src = url) +
+#'   hd_opts(title = "Norway", subtitle = "Random metric")
+#'
+#' # Custom colours
+#' hd(df, x = "hc-key", y = "value", mode = "dynamic") +
+#'   hd_geom_map(map_src = url, low_col = "#FFEDA0", high_col = "#E31A1C") +
+#'   hd_opts(title = "Custom palette")
+#'
+#' # Static mode (requires sf)
+#' hd(df, x = "hc-key", y = "value", mode = "static") +
+#'   hd_geom_map(map_src = url) +
+#'   hd_opts(title = "Static map")
+#' }
+#'
+#' @export
+hd_geom_map <- function(map_src,
+                        join_by      = "hc-key",
+                        series_name  = NULL,
+                        value_suffix = "",
+                        low_col      = NULL,
+                        high_col     = NULL,
+                        tooltip_fmt  = NULL,
+                        nav_enabled  = TRUE,
+                        ...) {
+
+  if (missing(map_src) || !.is_valid_map_src(map_src))
+    stop(
+      "hd_geom_map() requires `map_src` as:\n",
+      "  - a URL string:       hd_map_no() or 'https://...'\n",
+      "  - a local file path:  '/path/to/map.geojson'\n",
+      "  - a pre-parsed list:  jsonlite::fromJSON(..., simplifyVector = FALSE)",
+      call. = FALSE
+    )
+
+  hd_geom(
+    "map",
+    map_src      = map_src,
+    join_by      = join_by,
+    series_name  = series_name,
+    value_suffix = value_suffix,
+    low_col      = low_col,
+    high_col     = high_col,
+    tooltip_fmt  = tooltip_fmt,
+    nav_enabled  = nav_enabled,
+    ...
+  )
+}
+
+
+# =============================================================================
+# Norway map URL helper
+# =============================================================================
+
+#' Get the GeoJSON URL for Norwegian Maps
+#'
+#' Returns the URL of a GeoJSON file from the Highcharts map collection for
+#' Norway at municipality or county level.  Pass the result directly to
+#' `map_src` in [hd_geom_map()].
+#'
+#' @param level Character. One of:
+#'   \describe{
+#'     \item{`"municipality"`}{All Norwegian municipalities (default).}
+#'     \item{`"county"`}{All Norwegian counties (fylker).}
+#'   }
+#'
+#' @return A character string (URL).
+#'
+#' @examples
+#' hd_map_no()                  # municipality URL
+#' hd_map_no("county")          # county URL
+#'
+#' @export
+hd_map_no <- function(level = c("municipality", "county")) {
+
+  level <- match.arg(level)
+
+  base <- paste0(
+    "https://raw.githubusercontent.com/highcharts/",
+    "map-collection-dist/refs/heads/master/countries/no/"
+  )
+
+  jsonfile <- switch(level,
+                     municipality = paste0(base, "no-all-all.geo.json"),
+                     county       = paste0(base, "no-all.geo.json")
+                     )
+
+  geojson <- jsonlite::fromJSON(jsonfile, simplifyVector = FALSE)
+
+  # Strip the "no-" prefix from hc-key so it joins against plain
+  # kommunenummer/fylkesnummer codes. Mutating the parsed list directly
+  # (not via sf::st_write()/st_read()) keeps this an R character string
+  # end-to-end - no GDAL round trip, no risk of "0301" becoming 301.
+  geojson$features <- lapply(geojson$features, function(f) {
+    key <- f$properties[["hc-key"]]
+    if (!is.null(key))
+      f$properties[["hc-key"]] <- gsub("[^0-9]", "", key)
+    f
+  })
+
+  geojson
+}
+
+
+```
+
+
+## Egen kart-info for å lage kart. 
+
+IKKE FÅTT TIL
+
+```{r kart}
+
+# Fila jeg vil jobbe med: 
+my_data <- kommuneinfo[, c("kommunenummer4", "svar"), with = FALSE]
+
+setnames (my_data, "kommunenummer4", "kommunenummer")
+
+my_data[, svar := as.numeric(factor(svar, levels = c("Ja", "Nei")))]
+
+
+
+
+# Kommunenummer må være tekst med fire siffer
+my_data[, kommunenummer := sprintf("%04d", as.integer(kommunenummer))]
+
+# Rydd svarene først
+my_data[, svar := trimws(tolower(as.character(svar)))]
+
+# Lag numerisk kartverdi
+my_data[, svar_kode := fifelse(
+  svar == "ja", 1,
+  fifelse(svar == "nei", 0, NA_real_)
+)]
+
+# Kontroller kodingen
+my_data[, .N, by = .(svar, svar_kode)]
+
+
+my_data[, kommunenummer := as.character(kommunenummer)]
+
+
+# dataset med kolonne code og value, hvor code er kommunekoder
+
+
+spec <- hd_spec(my_data, x = "kommunenummer", y = "svar_koder")
+opts <- hd_opts(title = "Norge i kart", subtitle = "Her er kartet")
+
+hd_make(spec, "map", opts, map_src = hd_map_no("municipality"), mode = "dynamic")
+
+
+hd_make(spec, "map", opts, map_src = hd_map_no("municipality"), mode = "static")
+
+
+
+```
+
+
+
 # TIL folkehelsekonferanse
 
 ```{r statistikk}
@@ -486,6 +1176,7 @@ freq_table(dtx$s_3)   # sektortilknytning
 # Ivaretar kommunen kravet til oversikt over helsetilstanden i kommunen og faktorer som påvirker denne?
   freq_table(dtx$q16b)  
   krav <- data.table(svar = dtx$q16b)
+  
   # Behold kun gyldige svar (1, 2, 3)
   tab <- krav[svar %in% c(1, 2, 3),
   .N,
@@ -738,620 +1429,6 @@ q10b_freq
 
 
 ```
-
-# 3. Kobling til SSB-kommunedata (befolkning)
-
-```{r merge-befolkning}
-#| label: merge-befolkning
-bef_path <- "O:/Prosjekt/Rusdata/Kommunenes forvaltning/Kommuner/befolkning2023-2024.dta"
-bef <- as.data.table(read_dta(bef_path))
-
-setnames(bef, "kommunenummer2025", "kommunenummer")
-
-dt <- merge(dt, bef, by = "kommunenummer", all = TRUE, allow.cartesian = TRUE)
-```
-
-Samme logikk som over, men nå kobles på `kommunenummer` (variabelen som kom inn fra forrige kobling).
-
-## Rydding og navnsetting etter kobling
-
-```{r opprydding}
-#| label: opprydding
-# setattr(dt$b2023, "label", "befolkning 2023")
-# setattr(dt$b2024, "label", "befolkning 2024")
-# setattr(dt$b2025, "label", "befolkning 2025")
-
-# setnames(dt, "kommunenummer2025", "kommunenummer")
-# setattr(dt$kommunenummer, "label", "kommunenummer SSB 2025")
-
-# dt[, c("A", "E", "bkommunenummer", "bkommune", "oldname", "b2023") := NULL]
-
-setcolorder(dt, c("kommune.x", "kommunenummer"))
-setorder(dt, kommunenummer)
-```
-
-- `label variable x "tekst"` → data.table har ingen innebygd variabel-label, men vi kan sette samme slags attributt manuelt med `setattr(dt$x, "label", "tekst")` (dette er det haven/Stata-filer bruker internt, så det er konsistent med resten av datasettet, og fungerer f.eks. med `labelled::var_label()` senere).
-- `order` → `setcolorder()`, `sort` → `setorder()`, begge in place.
-
-# 4. Svar fra kommunen (ja/nei)
-
-```{r svar}
-#| label: svar
-dt[, svar := fifelse(respid == "", 0L, 1L)] # Hvis respid er tom (""), sett svar = 0. Ellers sett svar = 1.
-dt[, svar := factor(svar, levels = c(0, 1), labels = c("nei", "ja"))]
-setattr(dt$svar, "label", "svar fra kommunen nei/ja")
-table(dt$svar)
-round(100 * prop.table(table(dt$svar)), 2) # prosent
-```
-
-`gen ... replace ... replace` er en typisk Stata-måte å bygge en betinget variabel på trinnvis. I R gjør vi det i ett steg med `fifelse()` (data.tables raske, NA-sikre versjon av `ifelse()`), og oversetter `label define/values` til en `factor()` med eksplisitte levels/labels.
-
-# 5. Innbyggerkategori (2025) - ikke gjennomført
-
-```{r befolkning2025}
-#| label: befolkning2025
-# dt[, befolkning2025 := cut(
-#  b2025,
-#  breaks = c(-Inf, 2000, 5000, 10000, 20000, 50000, Inf),
-#  right  = FALSE,                 # intervaller [a, b) -- matcher <2000, 2000-4999 osv.
-#  labels = 1:6
-# )]
-# dt[, befolkning2025 := as.integer(as.character(befolkning2025))]
-```
-
-> ⚠️ Stata-koden setter til slutt `label values befolkning2025 labels3`, men `label define labels3 ...` finnes ikke i denne do-fila — den må være definert et annet sted (trolig i en tidligere fil du kjører før denne). Du må selv legge inn riktige tekst-labels her, f.eks.:
->
-> ``` r
-> dt[, befolkning2025 := factor(befolkning2025, levels = 1:6, labels = c(
->   "< 2 000 innbyggere", "2 000-4 999", "5 000-9 999",
->   "10 000-19 999", "20 000-49 999", ">= 50 000"
-> ))]
-> ```
-
-`cut()` med `right = FALSE` gir nøyaktig de samme grensene som de seks `replace`-linjene i Stata: `[−∞, 2000)`, `[2000, 5000)`, osv.
-
-## Kvalitetssjekk: stemmer innbyggertall besvart med SSB-tall? - ikke gjennomført
-
-```{r sjekk-innbyggertall}
-#| label: sjekk-innbyggertall
-# avvik <- dt[svar == "ja" & s_15 != befolkning2025]
-# table(dt[svar == "ja", s_15])
-
-# dt[, c("s_15") := NULL]
-```
-
-Dette er en ren kvalitetskontroll (ingen ny permanent variabel beholdes i Stata-koden heller — `t` droppes rett etterpå). Ifølge kommentaren i originalen: 7 kommuners egen-rapporterte innbyggertall stemte ikke med SSB-tall (typisk rett over/under en kategorigrense), og én kommune manglet svar — SSB-2025-tallene brukes derfor videre.
-
-# 6. Liten kommune (dikotom/trikotom størrelseskategori) - ikke gjennomført
-
-```{r liten}
-#| label: liten
-# dt[, liten := fcase(
-#  befolkning2025 %in% c(1, 2), 1L,
-#  befolkning2025 %in% c(3, 4), 2L,
-#  befolkning2025 %in% c(5, 6), 3L
-# )]
-# dt[, liten := factor(liten, levels = 1:3, labels = c(
-#   "<5000 innbyggere", "5000-20000 innbyggere", ">= 20000 innbyggere"
-# ))]
-```
-
-`fcase()` er data.tables vektoriserte `CASE WHEN` — mer lesbart enn en kjede av `replace`-linjer, og tryggere enn nøstet `ifelse()` fordi betingelsene evalueres i rekkefølge og stopper ved første treff.
-
-# 7. Fylke (2025)
-
-```{r fylke}
-#| label: fylke
-
-dt[, fylke := as.integer(substr(sprintf("%04d", kommunenummer), 1, 2))]
-
-fylke_labels <- c(
-  "03" = "Oslo - Oslove",
-  "11" = "Rogaland",
-  "15" = "Møre og Romsdal",
-  "18" = "Nordland - Nordlánnda",
-  "31" = "Østfold",
-  "32" = "Akershus",
-  "33" = "Buskerud",
-  "34" = "Innlandet",
-  "39" = "Vestfold",
-  "40" = "Telemark",
-  "42" = "Agder", #
-  "46" = "Vestland",
-  "50" = "Trøndelag - Trööndelage",
-  "55" = "Troms - Romsa - Tromssa",
-  "56" = "Finnmark - Finnmárku - Finmarkku"
-)
-
-dt[, fylke := factor(fylke, levels = as.integer(names(fylke_labels)), labels = fylke_labels)]
-
-table(dt$fylke)
-```
-
-`string(kommunenummer, "%04.0f")` (fyll med ledende nuller til 4 siffer) → `sprintf("%04d", kommunenummer)`. `substr(..., 1, 2)` er identisk i R og Stata. Fylkeskodene defineres som en navngitt vektor og limes rett inn som `factor()`-labels — dette erstatter `label define` + `label values` i ett steg.
-
-# 8. Landsdel (2025)
-
-Kilde: [SSBs klassifikasjon 106](https://www.ssb.no/klass/klassifikasjoner/106)
-
-```{r landsdel}
-#| label: landsdel
-dt[, landsdel := fcase(
-  fylke %in% c("Oslo", "Akershus"),                                                 1L,
-  fylke %in% c("Innlandet", "Østfold", "Buskerud", "Vestfold", "Telemark"),          2L,
-  fylke %in% c("Agder", "Rogaland"),                                                 3L,
-  fylke %in% c("Vestland", "Møre og Romsdal"),                                       4L,
-  fylke == "Trøndelag - Trööndelage",                                                5L,
-  fylke %in% c("Nordland - Nordlánnda", "Troms - Romsa - Tromssa",
-               "Finnmark - Finnmárku - Finmarkku"),                                  6L
-)]
-
-dt[, landsdel := factor(landsdel, levels = 1:6, labels = c(
-  "Oslo og Akershus", "Østlandet ellers", "Agder og Rogaland",
-  "Vestlandet", "Trøndelag", "Nord-Norge"
-))]
-```
-
-Samme `fcase()`-mønster som for `liten`, men her matcher jeg på de allerede tekst-labelte `fylke`-nivåene i stedet for de numeriske kodene, siden `fylke` allerede er konvertert til factor over. (Ønsker du å matche på tallkodene i stedet, bytt til `fylke %in% c(3, 32)` osv. før du gjør `fylke` om til factor.)
-
-# 9. Sentralitet (2024) - ikke gjennomført
-
-Kilde: [SSBs klassifikasjon 128, korrespondanse 2024](https://www.ssb.no/klass/klassifikasjoner/128/versjon/1427/korrespondanser/1417)
-
-```{r merge-sentralitet}
-#| label: merge-sentralitet
-# sentr_path <- "O:/Prosjekt/Rusdata/Kommunenes forvaltning/Kommuner/sentralitet2024.dta"
-# sentr <- as.data.table(read_dta(sentr_path))
-
-# dt <- merge(dt, sentr, by = "kommunenummer", all = TRUE, allow.cartesian = TRUE)
-# dt[, targetname := NULL]
-```
-
-Filen `sentralitet2024.dta` er selv laget fra en CSV (se den utkommenterte Stata-blokken) — det tilsvarende R-steget, om du trenger å regenerere den, er:
-
-```{r sentralitet-import, eval=FALSE}
-#| label: sentralitet-import
-# sentr_csv <- fread("O:/Prosjekt/Rusdata/Kommunenes forvaltning/Kommuner/Sentralitet2024.csv")
-# setnames(sentr_csv, "targetcode", "kommunenummer")
-# sentr_csv[, sentralitet2024 := factor(sourcename)]  # tilsvarer "encode"
-# setattr(sentr_csv$sentralitet2024, "label", "SSBs sentralitetskode 2024")
-# sentr_csv[, c("sourcecode", "sourcename") := NULL]
-# write_dta(sentr_csv, sentr_path)
-```
-
-`encode` i Stata lager en heltallskodet variabel med tekst-labels fra en strengvariabel — det tilsvarer ganske enkelt `factor()` i R.
-
-# 10. Hjelpefunksjoner for frekvens- og krysstabeller
-
-Resten av scriptet i Stata består i stor grad av `tabulate`/`tab`-kommandoer. Jeg lager to gjenbrukbare funksjoner i data.table-stil i stedet for å skrive `table()`-kall om og om igjen:
-
-```{r hjelpefunksjoner}
-#| label: hjelpefunksjoner
-
-# Tabell med frekvens + prosent (funksjonen tar med missing)
-freq_table <- function(x, useNA = "ifany") {
-  tab <- table(x, useNA = useNA)
-  data.table(
-    verdi   = names(tab),
-    n       = as.integer(tab),
-    prosent = round(100 * as.integer(tab) / sum(tab), 1)
-  )
-}
-
-# krysstabell med radprosent (funksjonen tar med missing?)
-crosstab_row <- function(data, rowvar, colvar) {
-  tab <- data[, .N, by = c(rowvar, colvar)] # teller observasjoner
-  tab[, prosent := round(100 * N / sum(N), 1), by = rowvar] # beregner prosent
-  setorderv(tab, c(rowvar, colvar)) # sorterer tabellen
-  tab[]
-}
-
-# Tilsvarer: krysstabell med kolonneprosent (funksjonen tar med missing?)
-crosstab_col <- function(data, rowvar, colvar) {
-  tab <- data[, .N, by = c(rowvar, colvar)]
-  tab[, prosent := round(100 * N / sum(N), 1), by = colvar]
-  setorderv(tab, c(rowvar, colvar))
-  tab[]
-}
-```
-
-# 11. Kommuner som ikke har svart
-
-```{r ikke-svart}
-#| label: ikke-svart
-freq_table(dt$svar)
-dt[svar == "nei", kommune.x] # Kommunenavn som ikke har svart.
-
-# freq_table(dt[svar == "nei", befolkning2025])
-freq_table(dt[svar == "nei", fylke])
-crosstab_row(dt, "fylke", "svar")
-# crosstab_row(dt, "sentralitet", "svar")
-```
-
-# 12. Kommuner som har svart
-
-```{r har-svart}
-#| label: har-svart
-# freq_table(dt[svar == "ja", befolkning2025])
-
-
-```
-
-```{r pie-befolkning}
-#| label: pie-befolkning
-# pie_dt <- dt[svar == "ja", .N, by = befolkning2025]
-# pie_dt[, prosent := N / sum(N)]
-
-# ggplot(pie_dt, aes(x = "", y = N, fill = factor(befolkning2025))) +
-#  geom_col(width = 1) +
-#  coord_polar(theta = "y") +
-#  geom_text(aes(label = percent(prosent, accuracy = 1)),
-#            position = position_stack(vjust = 0.5)) +
-#  labs(title = "Innbyggertall", fill = "Kategori") +
-#  theme_void()
-```
-
-`graph pie ... plabel(_all percent)` → `ggplot2` har ikke et innebygd kakediagram-geom, men mønsteret `geom_col()` + `coord_polar(theta = "y")` er standardmåten å lage det på.
-
-```{r har-svart-2}
-#| label: har-svart-2
-freq_table(dt[svar == "ja", fylke])
-crosstab_row(dt, "fylke", "svar")
-# crosstab_row(dt, "sentralitet", "svar")
-# crosstab_row(dt, "liten", "svar")
-```
-
-# 13. Tittel og sektor blant de som har svart
-
-```{r tittel-sektor}
-#| label: tittel-sektor
-freq_table(dt$s_2)   # tittel/funksjon              # OBS, labels må knyttes på.
-# crosstab_col(dt, "s_2", "liten")
-
-freq_table(dt$s_3)   # sektortilknytning            # OBS, labels må knyttes på.
-# crosstab_col(dt, "s_3", "liten")
-```
-
-De to `graph pie`-blokkene for `s_2` og `s_3` er kommentert ut i originalen (inkludert `graph export` til png), så jeg lar dem stå som kode du kan slå på ved behov, etter samme oppskrift som kakediagrammet over.
-
-# 14. Oversiktsdokument over helsetilstanden (q16)
-
-```{r q16}
-#| label: q16
-freq_table(dt$q16)
-dt[q16 == 10, kommune.x]
-
-```
-
-```{r q16-detalj}
-#| label: q16-detalj
-
-# freq_table(dt[q16 == 10, befolkning2025])
-
-```
-
-FORTSETT HER!
-
-# 15. Hvilke deler av kommunen er involvert i oversiktsarbeidet (s_16\_\*)
-
-```{r s16-oppsett}
-#| label: s16-oppsett
-s16_vars <- c(
-  s_16_1  = "Samfunnsmedisinsk",
-  s_16_2  = "Plan og bygning",
-  s_16_3  = "Samfunn-/byutvikling",
-  s_16_4  = "Helse og velferd",
-  s_16_5  = "Miljø og klima",
-  s_16_6  = "Kultur",
-  s_16_7  = "Frivillighet",
-  s_16_8  = "Næring",
-  s_16_9  = "Utdanning",
-  s_16_10 = "Barnehage",
-  s_16_11 = "Eiendom",
-  s_16_12 = "Miljøteknisk",
-  s_16_13 = "Annet, spesifiser"
-)
-
-# Frekvens for hver enkeltvariabel (tilsvarer 13 x "tab s_16_x")
-s16_freq <- rbindlist(lapply(names(s16_vars), function(v) {
-  cbind(variabel = s16_vars[[v]], freq_table(dt[[v]]))
-}))
-s16_freq
-
-
-# "Annet"
-freq_table(dt$s_16_17)
-# s_16_14_other må hentes fra Excel pga. lange åpne tekstsvar -- se avsnitt om åpne felt nederst.
-```
-
-```{r s16-total}
-#| label: s16-total
-s16_cols <- names(s16_vars)
-dt[, involvert_total := rowSums(.SD, na.rm = TRUE), .SDcols = s16_cols]
-freq_table(dt$involvert_total)
-```
-
-`rowtotal(var1 var2 ...)` → `rowSums(.SD, na.rm = TRUE), .SDcols = c(...)`. `.SD` ("Subset of Data") er data.tables måte å referere til et sett kolonner radvis på; `.SDcols` bestemmer hvilke.
-
-```{r s16-liten}
-#| label: s16-liten
-s16_by_liten <- rbindlist(lapply(names(s16_vars), function(v) {
-  cbind(variabel = s16_vars[[v]], crosstab_row(dt, v, "liten"))
-}))
-s16_by_liten
-```
-
-# 16. Samarbeid med andre kommuner
-
-```{r samarbeid}
-#| label: samarbeid
-freq_table(dt$q2_1)
-crosstab_row(dt, "befolkning2025", "q2_1")
-crosstab_row(dt, "liten", "q2_1")
-
-freq_table(dt$q2_2)
-crosstab_row(dt, "liten", "q2_2")
-```
-
-# 17. Hovedutfordringer kommunene har identifisert (s_7\_\*)
-
-```{r s7-oppsett}
-#| label: s7-oppsett
-s7_grupper <- list(
-  "Befolkning"                              = paste0("s_7_", 1:3),
-  "Oppvekst- og levekårsforhold"             = paste0("s_7_", 4:10),
-  "Fysisk, biologisk, kjemisk og sos. miljø" = paste0("s_7_", 11:14),
-  "Skader og ulykker"                        = paste0("s_7_", 15:16),
-  "Helserelatert atferd"                     = paste0("s_7_", 17:20),
-  "Helsetilstand"                            = paste0("s_7_", 21:23),
-  "Andre tema"                               = "s_7_24",
-  "Ikke identifisert hovedutfordringer"      = "s_7_25"
-)
-
-s7_freq <- rbindlist(lapply(names(s7_grupper), function(g) {
-  vars <- s7_grupper[[g]]
-  rbindlist(lapply(vars, function(v) {
-    cbind(gruppe = g, variabel = v, freq_table(dt[[v]]))
-  }))
-}))
-s7_freq
-```
-
-```{r s7-total}
-#| label: s7-total
-utfordringer_cols <- paste0("s_7_", 1:24)   # s_7_25 (ingen utfordring) holdes utenfor, som i originalen
-dt[, utfordringer_total := rowSums(.SD, na.rm = TRUE), .SDcols = utfordringer_cols]
-dt[, helse_total := rowSums(.SD, na.rm = TRUE), .SDcols = paste0("s_7_", 21:23)]
-
-freq_table(dt$utfordringer_total)
-freq_table(dt$helse_total)
-```
-
-> 🔎 Originalen skriver `egen ... = rowtotal(...)` (Statas syntaks for radvise beregninger — jeg har brukt `rowtotal` som er nærmest `rowSums`), og avslutter deretter med `tab utfordringer_total` og `tab ut_helse_total`. `ut_helse_total` finnes ikke noe sted i fila — det ser ut som en skrivefeil for `helse_total`. Jeg har brukt `helse_total` her; dobbeltsjekk at det er riktig variabel.
-
-# 18. Prioriterte tiltak som følge av utfordringene (s_29\_\*)
-
-```{r s29-oppsett}
-#| label: s29-oppsett
-s29_grupper <- list(
-  "Befolkning"                              = paste0("s_29_", 1:3),
-  "Oppvekst- og levekårsforhold"             = paste0("s_29_", 4:10),
-  "Fysisk, biologisk, kjemisk og sos. miljø" = paste0("s_29_", 11:14),
-  "Skader og ulykker"                        = paste0("s_29_", 15:16),
-  "Helserelatert atferd"                     = paste0("s_29_", 17:20),
-  "Helsetilstand"                            = paste0("s_29_", 21:23),
-  "Andre tema"                               = "s_29_24",
-  "Ikke prioritert tiltak"                   = "s_29_25"
-)
-
-s29_freq <- rbindlist(lapply(names(s29_grupper), function(g) {
-  vars <- s29_grupper[[g]]
-  rbindlist(lapply(vars, function(v) {
-    cbind(gruppe = g, variabel = v, freq_table(dt[[v]]))
-  }))
-}))
-s29_freq
-```
-
-```{r s29-total}
-#| label: s29-total
-tiltak_cols <- paste0("s_29_", 1:24)
-dt[, tiltak_total := rowSums(.SD, na.rm = TRUE), .SDcols = tiltak_cols]
-dt[, til_helse_total := rowSums(.SD, na.rm = TRUE), .SDcols = paste0("s_29_", 21:23)]
-
-freq_table(dt$tiltak_total)
-freq_table(dt$til_helse_total)
-```
-
-> 🔎 Samme kommentar som over: originalen avslutter denne blokken med `tab utfordringer_total` og `tab helse_total` — begge navn fra forrige blokk, ikke `tiltak_total`/`til_helse_total` som nettopp ble laget. Trolig copy-paste fra seksjonen over. Jeg har vist frekvensen for de riktige, nylig opprettede variablene her.
-
-# 19. Planstrategi og planer (q18–q20)
-
-```{r q18-q20}
-#| label: q18-q20
-freq_table(dt$q18)
-crosstab_row(dt, "q18", "liten")
-
-freq_table(dt$q19)   # kun blant de som svarte ja på q18
-
-q20_vars <- c(
-  q20_1  = "Kommuneplanens samfunnsdel",
-  q20_2  = "Kommuneplanens arealdel",
-  q20_3  = "Økonomiplan/Handlingsprogram",
-  q20_4  = "Planer for oppvekst",
-  q20_5  = "Planer for utdanning",
-  q20_6  = "Planer for byutvikling/nærmiljøutvikling/areal",
-  q20_7  = "Planer innen helse/sosial",
-  q20_8  = "Planer for miljø og klima",
-  q20_9  = "Planer for kultur",
-  q20_10 = "Planer for frivillighet",
-  q20_11 = "Planer for næringsutvikling",
-  q20_12 = "Egen plan for folkehelse",
-  q20_13 = "Forebyggende plan (barnevernsloven)",
-  q20_14 = "Alkoholpolitisk handlingsplan",
-  q20_15 = "Andre temaområder",
-  q20_16 = "Ingen av disse"
-)
-
-q20_freq <- rbindlist(lapply(names(q20_vars), function(v) {
-  cbind(variabel = q20_vars[[v]], freq_table(dt[[v]]))
-}))
-q20_freq
-```
-
-# 20. Gjennomgang av folkehelsearbeidet i fireårsperioden (q21)
-
-```{r q21}
-#| label: q21
-freq_table(dt$q21)
-crosstab_row(dt, "fylke", "q21")
-crosstab_row(dt, "landsdel", "q21")
-crosstab_col(dt, "liten", "q21")
-
-freq_table(dt$q21b)     # åpent spørsmål -- se Excel-eksport nederst
-freq_table(dt$q21b_1)
-```
-
-# 21. Behov for støtte og veiledning fra Helsedirektoratet (q29a\_\*)
-
-```{r q29a-oppsett}
-#| label: q29a-oppsett
-q29a_vars <- c(
-  q29a_1  = "Bruk av data i folkehelseprofiler og statistikkbank",
-  q29a_2  = "Innhenting av informasjon fra kommunens tjenester og lokal kunnskap",
-  q29a_3  = "Analyse av innsamlet informasjon",
-  q29a_4  = "Prioritere planoppgaver på folkehelseområdet i planstrategien",
-  q29a_5  = "Forankre folkehelsemål og strategier i kommuneplanens samfunnsdel",
-  q29a_6  = "Følge opp folkehelsemål og strategier i videre planlegging",
-  q29a_7  = "Oversette folkehelsemål til tiltak",
-  q29a_8  = "Utvikling av tiltak",
-  q29a_9  = "Evaluering av tiltak",
-  q29a_10 = "Evaluering av om folkehelsen utvikles i riktig retning",
-  q29a_11 = "Forbedringsområder i kommunens systematiske folkehelsearbeid",
-  q29a_12 = "Helsekonsekvensutredninger (HKU)",
-  q29a_13 = "Sosial ulikhet i helse",
-  q29a_14 = "Annet"
-)
-```
-
-I originalen lager Stata en "kortnavn"-kopi av hver variabel (`gen profiler = q29a_1`, `gen ktjen = q29a_2`, …) bare for å gi den et lesbart navn i output. Det trenger vi ikke i R — `q29a_vars` over gir oss lesbare labels uten å duplisere kolonner.
-
-```{r q29a-frekvens-summary}
-#| label: q29a-frekvens-summary
-q29a_freq <- rbindlist(lapply(names(q29a_vars), function(v) {
-  cbind(variabel = q29a_vars[[v]], freq_table(dt[[v]]))
-}))
-q29a_freq
-
-# Tilsvarer "summarize x if x != ."
-q29a_summary <- rbindlist(lapply(names(q29a_vars), function(v) {
-  x <- dt[[v]]
-  data.table(
-    variabel = q29a_vars[[v]],
-    n        = sum(!is.na(x)),
-    gj.snitt = round(mean(x, na.rm = TRUE), 2),
-    sd       = round(sd(x, na.rm = TRUE), 2),
-    min      = min(x, na.rm = TRUE),
-    max      = max(x, na.rm = TRUE)
-  )
-}))
-q29a_summary
-```
-
-```{r q29a-liten}
-#| label: q29a-liten
-# Tilsvarer "tab liten if x == 4 | x == 5" for hver variabel
-q29a_liten_viktig <- rbindlist(lapply(names(q29a_vars), function(v) {
-  sub <- dt[get(v) %in% c(4, 5)]
-  cbind(variabel = q29a_vars[[v]], freq_table(sub$liten))
-}))
-q29a_liten_viktig
-```
-
-```{r q29a-bar, fig.height=4}
-#| label: q29a-bar
-for (v in names(q29a_vars)) {
-  p <- ggplot(dt[!is.na(get(v))], aes(x = factor(get(v)))) +
-    geom_bar(fill = "#2c7fb8") +
-    labs(title = q29a_vars[[v]], x = NULL, y = "Antall kommuner") +
-    theme_minimal()
-  print(p)
-}
-```
-
-`graph bar, over(x) title(...)` gjentas 14 ganger i originalen med identisk struktur — her kjøres samme `ggplot()`-oppskrift i en for-løkke over alle `q29a_*`-variablene, og hver figur skrives ut med `print()` (nødvendig inni løkker/funksjoner i R, ellers vises ikke plottet).
-
-# 22. Ønsket veiledningsform fra Hdir (q29b\_\*)
-
-```{r q29b}
-#| label: q29b
-q29b_vars <- c(
-  q29b_1 = "Skriftlig materiale på nett (Hdir/forebygging.no)",
-  q29b_2 = "Webinar",
-  q29b_3 = "Digitale kurs",
-  q29b_4 = "Regionale fysiske samlinger",
-  q29b_5 = "Annet"
-)
-
-q29b_freq <- rbindlist(lapply(names(q29b_vars), function(v) {
-  cbind(variabel = q29b_vars[[v]], freq_table(dt[[v]]))
-}))
-q29b_freq
-
-q29b_by_liten <- rbindlist(lapply(names(q29b_vars), function(v) {
-  cbind(variabel = q29b_vars[[v]], crosstab_row(dt, v, "liten"))
-}))
-q29b_by_liten
-
-freq_table(dt$q29b_5_other)  # åpent tekstfelt
-```
-
-# 23. Åpne tekstfelt (må håndteres i Excel)
-
-Flere spørsmål har åpne svarfelt som Stata-koden konsekvent henviser til Excel for (`s_16_14_other`, `q21b`/`q21b_1` delvis, `q22`, `q29b_5_other`, `q29_o`). Disse er frie tekstsvar og egner seg dårlig for `data.table`-basert tabellering — enklest er å eksportere de aktuelle kolonnene direkte:
-
-```{r apne-felt}
-#| label: apne-felt
-apne_felt <- dt[, .(kommune, s_16_14_other, q21b, q22, q29b_5_other)]
-
-fwrite(apne_felt, "apne_svar_folkehelse_2024_2025.csv")
-```
-
-# Oppsummering av strukturelle forskjeller Stata → R/data.table
-
-| Stata | R / data.table |
-|------------------------------------|------------------------------------|
-| `clear all` | Ikke nødvendig — objekter i eget navnerom |
-| `use "fil.dta"` | `as.data.table(read_dta("fil.dta"))` |
-| `destring x, gen(y)` | `y := as.numeric(x)` |
-| `drop x y z` | `dt[, c("x","y","z") := NULL]` |
-| `rename x y` | `setnames(dt, "x", "y")` |
-| `merge 1:m/m:1 key using fil` (uten `keep()`) | `merge(dt1, dt2, by = "key", all = TRUE, allow.cartesian = TRUE)` |
-| `label variable x "..."` | `setattr(dt$x, "label", "...")` |
-| `label define`/`label values` | `factor(x, levels = ..., labels = ...)` |
-| `gen`/`replace`-kjeder | `fifelse()` eller `fcase()` |
-| `egen y = rowtotal(x1-xn)` | `y := rowSums(.SD, na.rm = TRUE), .SDcols = c(x1,...,xn)` |
-| `tabulate`/`tab1 x` | `freq_table(x)` (egendefinert, over) |
-| `tab x y, row/col` | `crosstab_row()`/`crosstab_col()` (egendefinert, over) |
-| `graph pie`/`graph bar` | `ggplot2::geom_col() + coord_polar()` / `geom_bar()` |
-| `encode strvar, gen(x)` | `factor(strvar)` |
-
-## 2024_2026
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
-```{r}
-1 + 1
-```
-
-You can add options to executable code like this
-
-```{r}
-#| echo: false
-2 * 2
-```
-
-The `echo: false` option disables the printing of code (only output is displayed).
 
 # KFF
 
