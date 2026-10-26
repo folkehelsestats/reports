@@ -1,0 +1,2205 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="nb" xml:lang="nb"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Helsedirektoratet">
+
+<title>KFF2026_vestland</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="kff_vestland_files/libs/clipboard/clipboard.min.js"></script>
+<script src="kff_vestland_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="kff_vestland_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="kff_vestland_files/libs/quarto-html/popper.min.js"></script>
+<script src="kff_vestland_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="kff_vestland_files/libs/quarto-html/anchor.min.js"></script>
+<link href="kff_vestland_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="kff_vestland_files/libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="kff_vestland_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="kff_vestland_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="kff_vestland_files/libs/bootstrap/bootstrap-62e2d20df198e8a01bb734742f2e28cf.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="kff_vestland_files/libs/htmltools-fill-0.5.9/fill.css" rel="stylesheet">
+
+<script src="kff_vestland_files/libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
+
+<script src="kff_vestland_files/libs/jquery-3.5.1/jquery.min.js"></script>
+
+<script src="kff_vestland_files/libs/proj4js-2.3.15/proj4.js"></script>
+
+<link href="kff_vestland_files/libs/highcharts-9.3.1/css/motion.css" rel="stylesheet">
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/highcharts.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/highcharts-3d.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/highcharts-more.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/stock.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/map.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/data.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/exporting.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/offline-exporting.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/drilldown.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/item-series.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/overlapping-datalabels.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/annotations.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/export-data.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/funnel.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/heatmap.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/treemap.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/sankey.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/dependency-wheel.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/organization.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/solid-gauge.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/streamgraph.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/sunburst.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/vector.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/wordcloud.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/xrange.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/tilemap.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/venn.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/gantt.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/timeline.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/parallel-coordinates.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/bullet.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/coloraxis.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/dumbbell.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/lollipop.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/series-label.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/plugins/motion.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/custom/reset.js"></script>
+
+<script src="kff_vestland_files/libs/highcharts-9.3.1/modules/boost.js"></script>
+
+<script src="kff_vestland_files/libs/highchart-binding-0.9.5/highchart.js"></script>
+
+<link href="kff_vestland_files/libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet">
+
+<script src="kff_vestland_files/libs/pagedtable-1.1/js/pagedtable.js"></script>
+
+
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Innholdsfortegnelse</h2>
+   
+  <ul>
+  <li><a href="#datagrunnlag-og-svarstatus" id="toc-datagrunnlag-og-svarstatus" class="nav-link active" data-scroll-target="#datagrunnlag-og-svarstatus"><span class="header-section-number">1</span> Datagrunnlag og svarstatus</a></li>
+  <li><a href="#resultater" id="toc-resultater" class="nav-link" data-scroll-target="#resultater"><span class="header-section-number">2</span> Resultater</a></li>
+  <li><a href="#om-respondentene" id="toc-om-respondentene" class="nav-link" data-scroll-target="#om-respondentene"><span class="header-section-number">3</span> Om respondentene</a>
+  <ul class="collapse">
+  <li><a href="#organisatorisk-plassering-av-den-som-har-fylt-ut-skjemaet" id="toc-organisatorisk-plassering-av-den-som-har-fylt-ut-skjemaet" class="nav-link" data-scroll-target="#organisatorisk-plassering-av-den-som-har-fylt-ut-skjemaet"><span class="header-section-number">3.0.1</span> Organisatorisk plassering av den som har fylt ut skjemaet</a></li>
+  <li><a href="#tittel" id="toc-tittel" class="nav-link" data-scroll-target="#tittel"><span class="header-section-number">3.0.2</span> Tittel</a></li>
+  <li><a href="#sektortilknytning" id="toc-sektortilknytning" class="nav-link" data-scroll-target="#sektortilknytning"><span class="header-section-number">3.0.3</span> Sektortilknytning</a></li>
+  <li><a href="#a.-ivaretar-kommunen-kravet-til-oversikt-over-helsetilstanden-i-kommunen-og-faktorer-som-påvirker-denne" id="toc-a.-ivaretar-kommunen-kravet-til-oversikt-over-helsetilstanden-i-kommunen-og-faktorer-som-påvirker-denne" class="nav-link" data-scroll-target="#a.-ivaretar-kommunen-kravet-til-oversikt-over-helsetilstanden-i-kommunen-og-faktorer-som-påvirker-denne"><span class="header-section-number">3.0.4</span> 1a. Ivaretar kommunen kravet til oversikt over helsetilstanden i kommunen og faktorer som påvirker denne?</a></li>
+  </ul></li>
+  <li><a href="#oversikt-over-helsetilstand-og-påvirkningsfaktorer" id="toc-oversikt-over-helsetilstand-og-påvirkningsfaktorer" class="nav-link" data-scroll-target="#oversikt-over-helsetilstand-og-påvirkningsfaktorer"><span class="header-section-number">4</span> Oversikt over helsetilstand og påvirkningsfaktorer</a>
+  <ul class="collapse">
+  <li><a href="#deler-av-kommunen-som-er-involvert" id="toc-deler-av-kommunen-som-er-involvert" class="nav-link" data-scroll-target="#deler-av-kommunen-som-er-involvert"><span class="header-section-number">4.1</span> Deler av kommunen som er involvert</a></li>
+  </ul></li>
+  <li><a href="#interkommunalt-samarbeid" id="toc-interkommunalt-samarbeid" class="nav-link" data-scroll-target="#interkommunalt-samarbeid"><span class="header-section-number">5</span> Interkommunalt samarbeid</a>
+  <ul class="collapse">
+  <li><a href="#a.-samarbeider-kommunen-med-andre-kommuner" id="toc-a.-samarbeider-kommunen-med-andre-kommuner" class="nav-link" data-scroll-target="#a.-samarbeider-kommunen-med-andre-kommuner"><span class="header-section-number">5.0.1</span> 3a. Samarbeider kommunen med andre kommuner?</a></li>
+  <li><a href="#samarbeid-etter-kommunestørrelse-og-fylke" id="toc-samarbeid-etter-kommunestørrelse-og-fylke" class="nav-link" data-scroll-target="#samarbeid-etter-kommunestørrelse-og-fylke"><span class="header-section-number">5.1</span> Samarbeid etter kommunestørrelse og fylke</a></li>
+  </ul></li>
+  <li><a href="#største-folkehelseutfordringer-og-prioriterte-tiltak" id="toc-største-folkehelseutfordringer-og-prioriterte-tiltak" class="nav-link" data-scroll-target="#største-folkehelseutfordringer-og-prioriterte-tiltak"><span class="header-section-number">6</span> Største folkehelseutfordringer og prioriterte tiltak</a></li>
+  <li><a href="#planstrategi-og-planer" id="toc-planstrategi-og-planer" class="nav-link" data-scroll-target="#planstrategi-og-planer"><span class="header-section-number">7</span> Planstrategi og planer</a>
+  <ul class="collapse">
+  <li><a href="#er-hovedutfordringene-drøftet-i-kommunal-planstrategi" id="toc-er-hovedutfordringene-drøftet-i-kommunal-planstrategi" class="nav-link" data-scroll-target="#er-hovedutfordringene-drøftet-i-kommunal-planstrategi"><span class="header-section-number">7.0.1</span> 5. Er hovedutfordringene drøftet i kommunal planstrategi?</a></li>
+  <li><a href="#har-utfordringene-påvirket-prioritering-eller-utarbeiding-av-planer" id="toc-har-utfordringene-påvirket-prioritering-eller-utarbeiding-av-planer" class="nav-link" data-scroll-target="#har-utfordringene-påvirket-prioritering-eller-utarbeiding-av-planer"><span class="header-section-number">7.0.2</span> 6. Har utfordringene påvirket prioritering eller utarbeiding av planer?</a></li>
+  <li><a href="#er-hovedutfordringene-drøftet-i-kommunal-planstrategi-etter-landsdel-og-kommunestørrelse" id="toc-er-hovedutfordringene-drøftet-i-kommunal-planstrategi-etter-landsdel-og-kommunestørrelse" class="nav-link" data-scroll-target="#er-hovedutfordringene-drøftet-i-kommunal-planstrategi-etter-landsdel-og-kommunestørrelse"><span class="header-section-number">7.1</span> Er hovedutfordringene drøftet i kommunal planstrategi? Etter landsdel og kommunestørrelse</a></li>
+  <li><a href="#planer-hvor-kommunen-har-fastsatt-mål-og-strategier-som-svar-på-folkehelseutfordringene" id="toc-planer-hvor-kommunen-har-fastsatt-mål-og-strategier-som-svar-på-folkehelseutfordringene" class="nav-link" data-scroll-target="#planer-hvor-kommunen-har-fastsatt-mål-og-strategier-som-svar-på-folkehelseutfordringene"><span class="header-section-number">7.2</span> Planer hvor kommunen har fastsatt mål og strategier som svar på folkehelseutfordringene</a></li>
+  </ul></li>
+  <li><a href="#samiske-folkehelseutfordringer" id="toc-samiske-folkehelseutfordringer" class="nav-link" data-scroll-target="#samiske-folkehelseutfordringer"><span class="header-section-number">8</span> Samiske folkehelseutfordringer</a>
+  <ul class="collapse">
+  <li><a href="#a.-oppmerksomhet-på-særskilte-folkehelseutfordringer-i-den-samiske-befolkningen" id="toc-a.-oppmerksomhet-på-særskilte-folkehelseutfordringer-i-den-samiske-befolkningen" class="nav-link" data-scroll-target="#a.-oppmerksomhet-på-særskilte-folkehelseutfordringer-i-den-samiske-befolkningen"><span class="header-section-number">8.0.1</span> 7a. Oppmerksomhet på særskilte folkehelseutfordringer i den samiske befolkningen</a></li>
+  </ul></li>
+  <li><a href="#evaluering-læring-og-forbedring" id="toc-evaluering-læring-og-forbedring" class="nav-link" data-scroll-target="#evaluering-læring-og-forbedring"><span class="header-section-number">9</span> Evaluering, læring og forbedring</a>
+  <ul class="collapse">
+  <li><a href="#a.-har-kommunen-gjennomgått-og-vurdert-folkehelsearbeidet-i-fireårsperioden" id="toc-a.-har-kommunen-gjennomgått-og-vurdert-folkehelsearbeidet-i-fireårsperioden" class="nav-link" data-scroll-target="#a.-har-kommunen-gjennomgått-og-vurdert-folkehelsearbeidet-i-fireårsperioden"><span class="header-section-number">9.0.1</span> 9a. Har kommunen gjennomgått og vurdert folkehelsearbeidet i fireårsperioden?</a></li>
+  <li><a href="#etter-landsdel-og-kommunestørrelse" id="toc-etter-landsdel-og-kommunestørrelse" class="nav-link" data-scroll-target="#etter-landsdel-og-kommunestørrelse"><span class="header-section-number">9.1</span> Etter landsdel og kommunestørrelse</a></li>
+  </ul></li>
+  <li><a href="#barrierer-og-utfordringer" id="toc-barrierer-og-utfordringer" class="nav-link" data-scroll-target="#barrierer-og-utfordringer"><span class="header-section-number">10</span> Barrierer og utfordringer</a></li>
+  <li><a href="#datakvalitet-og-kontroll" id="toc-datakvalitet-og-kontroll" class="nav-link" data-scroll-target="#datakvalitet-og-kontroll"><span class="header-section-number">11</span> Datakvalitet og kontroll</a>
+  <ul class="collapse">
+  <li><a href="#filterkontroller" id="toc-filterkontroller" class="nav-link" data-scroll-target="#filterkontroller"><span class="header-section-number">11.1</span> Filterkontroller</a></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">KFF2026_vestland</h1>
+<p class="subtitle lead">Nasjonale resultater fra undersøkelsen</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Forfatter</div>
+    <div class="quarto-title-meta-contents">
+             <p>Helsedirektoratet </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Utgitt</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">26. oktober 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="datagrunnlag-og-svarstatus" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Datagrunnlag og svarstatus</h1>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Svarstatus for kommunene</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Har kommunen svart?</th>
+<th style="text-align: right;">Antall kommuner</th>
+<th style="text-align: right;">Prosent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">36</td>
+<td style="text-align: right;">83,7</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">16,3</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Det inngår 43 kommuner i kommunefilen. Av disse har 36 svart og 7 ikke svart. Svarprosenten er 83,7 prosent.</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Svar etter kommune</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Kommunenummer</th>
+<th style="text-align: left;">Svar</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">4601</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4602</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4611</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4612</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4613</td>
+<td style="text-align: left;">Nei</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4614</td>
+<td style="text-align: left;">Nei</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4615</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4616</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4617</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4618</td>
+<td style="text-align: left;">Nei</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4619</td>
+<td style="text-align: left;">Nei</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4620</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4621</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4622</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4623</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4624</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4625</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4626</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4627</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4628</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4629</td>
+<td style="text-align: left;">Nei</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4630</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4631</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4632</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4633</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4634</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4635</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4636</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4637</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4638</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4639</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4640</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4641</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4642</td>
+<td style="text-align: left;">Nei</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4643</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4644</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4645</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4646</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4647</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4648</td>
+<td style="text-align: left;">Nei</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4649</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4650</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4651</td>
+<td style="text-align: left;">Ja</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="resultater" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Resultater</h1>
+<p>Rapportfunksjonene er klare til bruk. Kommuner uten svar har <code>svar = "Nei"</code> og manglende verdier på SPSS-spørsmålene. Bruk gjerne <code>filter = dt$svar == "Ja"</code> eksplisitt i analysene.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>
+
+### Har kommunen svart på undersøkelsen?</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="kff_vestland_files/figure-html/eksempel-svarstatus-1.png" class="img-fluid figure-img" width="864"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+
+
+
+|Svar |  n| Prosent|
+|:----|--:|-------:|
+|Ja   | 36|  83.7 %|
+|Nei  |  7|  16.3 %|
+
+
+*Grunnlag: n = 43 gyldige svar.*</code></pre>
+</div>
+</div>
+</section>
+<section id="om-respondentene" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Om respondentene</h1>
+<section id="organisatorisk-plassering-av-den-som-har-fylt-ut-skjemaet" class="level3" data-number="3.0.1">
+<h3 data-number="3.0.1" class="anchored" data-anchor-id="organisatorisk-plassering-av-den-som-har-fylt-ut-skjemaet"><span class="header-section-number">3.0.1</span> Organisatorisk plassering av den som har fylt ut skjemaet</h3>
+<p><img src="kff_vestland_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid" width="864"></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Svar</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">Prosent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Kommuneadministrasjonen</td>
+<td style="text-align: right;">32</td>
+<td style="text-align: right;">88.9 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Tjenestenivå</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">11.1 %</td>
+</tr>
+</tbody>
+</table>
+<p><em>Grunnlag: n = 36 gyldige svar.</em></p>
+</section>
+<section id="tittel" class="level3" data-number="3.0.2">
+<h3 data-number="3.0.2" class="anchored" data-anchor-id="tittel"><span class="header-section-number">3.0.2</span> Tittel</h3>
+<p><img src="kff_vestland_files/figure-html/unnamed-chunk-1-2.png" class="img-fluid" width="864"></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Svar</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">Prosent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Rådgiver/saksbehandler</td>
+<td style="text-align: right;">18</td>
+<td style="text-align: right;">50.0 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Toppleder</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">19.4 %</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Mellomleder</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">16.7 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Kommune(over-)lege</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">13.9 %</td>
+</tr>
+</tbody>
+</table>
+<p><em>Grunnlag: n = 36 gyldige svar.</em></p>
+</section>
+<section id="sektortilknytning" class="level3" data-number="3.0.3">
+<h3 data-number="3.0.3" class="anchored" data-anchor-id="sektortilknytning"><span class="header-section-number">3.0.3</span> Sektortilknytning</h3>
+<p><img src="kff_vestland_files/figure-html/unnamed-chunk-1-3.png" class="img-fluid" width="864"></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Svar</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">Prosent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Helse, omsorg og velferd</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">44.4 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Plan, areal, næring og samferdsel</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">22.2 %</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Sektorovergripende avdeling/stab</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">22.2 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Annet</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">5.6 %</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Kultur, idrett og frivillighet</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">5.6 %</td>
+</tr>
+</tbody>
+</table>
+<p><em>Grunnlag: n = 36 gyldige svar.</em> # Ivaretar kommunen kravet til oversikt over helsetilstanden i kommunen og faktorer som påvirker denne?</p>
+</section>
+<section id="a.-ivaretar-kommunen-kravet-til-oversikt-over-helsetilstanden-i-kommunen-og-faktorer-som-påvirker-denne" class="level3" data-number="3.0.4">
+<h3 data-number="3.0.4" class="anchored" data-anchor-id="a.-ivaretar-kommunen-kravet-til-oversikt-over-helsetilstanden-i-kommunen-og-faktorer-som-påvirker-denne"><span class="header-section-number">3.0.4</span> 1a. Ivaretar kommunen kravet til oversikt over helsetilstanden i kommunen og faktorer som påvirker denne?</h3>
+<p><img src="kff_vestland_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid" width="864"></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Svar</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">Prosent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">35</td>
+<td style="text-align: right;">97.2 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Vet ikke</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2.8 %</td>
+</tr>
+</tbody>
+</table>
+<p><em>Grunnlag: n = 36 gyldige svar.</em></p>
+<p><img src="kff_vestland_files/figure-html/unnamed-chunk-2-2.png" class="img-fluid" width="864"></p>
+<table class="caption-top table">
+<caption>Ivaretar kommunen kravet til oversikt over helsetilstanden og påvirkningsfaktorer, etter kommunestørrelse</caption>
+<colgroup>
+<col style="width: 28%">
+<col style="width: 11%">
+<col style="width: 20%">
+<col style="width: 10%">
+<col style="width: 29%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">liten</th>
+<th style="text-align: left;">Svar</th>
+<th style="text-align: right;">Antall kommuner</th>
+<th style="text-align: right;">Prosent</th>
+<th style="text-align: right;">Gyldige svar i gruppen</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">&lt;5000 innbyggere</td>
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">17</td>
+<td style="text-align: right;">100,0 %</td>
+<td style="text-align: right;">17</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">&lt;5000 innbyggere</td>
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0,0 %</td>
+<td style="text-align: right;">17</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">&lt;5000 innbyggere</td>
+<td style="text-align: left;">Vet ikke</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0,0 %</td>
+<td style="text-align: right;">17</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">&gt;=20000 innbyggere</td>
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">100,0 %</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">&gt;=20000 innbyggere</td>
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0,0 %</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">&gt;=20000 innbyggere</td>
+<td style="text-align: left;">Vet ikke</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0,0 %</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">5000-20000 innbyggere</td>
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">92,3 %</td>
+<td style="text-align: right;">13</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">5000-20000 innbyggere</td>
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0,0 %</td>
+<td style="text-align: right;">13</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">5000-20000 innbyggere</td>
+<td style="text-align: left;">Vet ikke</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">7,7 %</td>
+<td style="text-align: right;">13</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="oversikt-over-helsetilstand-og-påvirkningsfaktorer" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Oversikt over helsetilstand og påvirkningsfaktorer</h1>
+<pre><code>Warning in single_table(v = "q16", labels = q16_labels): Ukjente koder i q16:
+2023, 2024, 2025, 2026, 2022</code></pre>
+<p><img src="kff_vestland_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="864"></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Svar</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">Prosent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Under utarbeidelse nå</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">8.3 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">2026</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">11.1 %</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">2025</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">13.9 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">2024</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">44.4 %</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">2023</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">19.4 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">2022</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2.8 %</td>
+</tr>
+</tbody>
+</table>
+<section id="deler-av-kommunen-som-er-involvert" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="deler-av-kommunen-som-er-involvert"><span class="header-section-number">4.1</span> Deler av kommunen som er involvert</h2>
+<p>Bare kommuner med svaralternativ 1 til 9 på spørsmål 1b inngår.</p>
+<div class="cell">
+<div class="cell-output cell-output-stderr">
+<pre><code>Registered S3 method overwritten by 'quantmod':
+  method            from
+  as.zoo.data.frame zoo </code></pre>
+</div>
+<div class="cell-output-display">
+<div class="highchart html-widget html-fill-item" id="htmlwidget-5445972fc4b84319ae95" style="width:100%;height:397px;"></div>
+<script type="application/json" data-for="htmlwidget-5445972fc4b84319ae95">{"x":{"hc_opts":{"chart":{"reflow":true,"inverted":true},"title":{"text":"Deler av kommunen som er involvert i arbeidet med oversiktsdokument"},"yAxis":{"title":{"text":null}},"credits":{"enabled":false},"exporting":{"enabled":false},"boost":{"enabled":false},"plotOptions":{"series":{"label":{"enabled":false},"turboThreshold":0},"treemap":{"layoutAlgorithm":"squarified"}},"subtitle":{"text":"KFF"},"xAxis":{"categories":["Helse og omsorg","Samfunnsmedisinsk","Samfunn-/byutvikling","Kultur og frivillighet","Utdanning","Barnehage","Velferd, arbeid og integrering","Plan og bygning","Miljø og klima","Eiendom","Miljøteknisk","Annet","Næring"],"title":{"text":" "}},"tooltip":{"useHTML":true,"shared":false,"headerFormat":"","pointFormat":"<span style=\"color:{point.color}\">●<\/span> <b>{point.name}<\/b><br/>Antall: <b>{point.y}<\/b>"},"series":[{"type":"column","name":"Antall","data":[{"name":"Helse og omsorg","y":30,"color":"#315975"},{"name":"Samfunnsmedisinsk","y":30,"color":"#315975"},{"name":"Samfunn-/byutvikling","y":27,"color":"#315975"},{"name":"Kultur og frivillighet","y":26,"color":"#315975"},{"name":"Utdanning","y":25,"color":"#315975"},{"name":"Barnehage","y":21,"color":"#315975"},{"name":"Velferd, arbeid og integrering","y":19,"color":"#315975"},{"name":"Plan og bygning","y":17,"color":"#315975"},{"name":"Miljø og klima","y":14,"color":"#315975"},{"name":"Eiendom","y":9,"color":"#315975"},{"name":"Miljøteknisk","y":9,"color":"#315975"},{"name":"Annet","y":8,"color":"#315975"},{"name":"Næring","y":7,"color":"#315975"}],"showInLegend":false,"dataLabels":{"enabled":false}}]},"theme":{"colors":["#d35400","#2980b9","#2ecc71","#f1c40f","#2c3e50","#7f8c8d"],"chart":{"style":{"fontFamily":"Roboto","color":"#666666"}},"title":{"align":"left","style":{"fontFamily":"Roboto Condensed","fontWeight":"bold"}},"subtitle":{"align":"left","style":{"fontFamily":"Roboto Condensed"}},"legend":{"align":"right","verticalAlign":"bottom"},"xAxis":{"gridLineWidth":1,"gridLineColor":"#F3F3F3","lineColor":"#F3F3F3","minorGridLineColor":"#F3F3F3","tickColor":"#F3F3F3","tickWidth":1},"yAxis":{"gridLineColor":"#F3F3F3","lineColor":"#F3F3F3","minorGridLineColor":"#F3F3F3","tickColor":"#F3F3F3","tickWidth":1},"plotOptions":{"line":{"marker":{"enabled":false}},"spline":{"marker":{"enabled":false}},"area":{"marker":{"enabled":false}},"areaspline":{"marker":{"enabled":false}},"arearange":{"marker":{"enabled":false}},"bubble":{"maxSize":"10%"}}},"conf_opts":{"global":{"Date":null,"VMLRadialGradientURL":"http =//code.highcharts.com/list(version)/gfx/vml-radial-gradient.png","canvasToolsURL":"http =//code.highcharts.com/list(version)/modules/canvas-tools.js","getTimezoneOffset":null,"timezoneOffset":0,"useUTC":true},"lang":{"contextButtonTitle":"Chart context menu","decimalPoint":".","downloadCSV":"Download CSV","downloadJPEG":"Download JPEG image","downloadPDF":"Download PDF document","downloadPNG":"Download PNG image","downloadSVG":"Download SVG vector image","downloadXLS":"Download XLS","drillUpText":"◁ Back to {series.name}","exitFullscreen":"Exit from full screen","exportData":{"annotationHeader":"Annotations","categoryDatetimeHeader":"DateTime","categoryHeader":"Category"},"hideData":"Hide data table","invalidDate":null,"loading":"Loading...","months":["January","February","March","April","May","June","July","August","September","October","November","December"],"noData":"No data to display","numericSymbolMagnitude":1000,"numericSymbols":["k","M","G","T","P","E"],"printChart":"Print chart","resetZoom":"Reset zoom","resetZoomTitle":"Reset zoom level 1:1","shortMonths":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"shortWeekdays":["Sat","Sun","Mon","Tue","Wed","Thu","Fri"],"thousandsSep":" ","viewData":"View data table","viewFullscreen":"View in full screen","weekdays":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]}},"type":"chart","fonts":["Roboto","Roboto+Condensed"],"debug":false},"evals":[],"jsHooks":[]}</script>
+</div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Deler av kommunen som er involvert i arbeidet med oversiktsdokumentet</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Del av kommunen</th>
+<th style="text-align: right;">Antall kommuner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Helse og omsorg</td>
+<td style="text-align: right;">30</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Samfunnsmedisinsk</td>
+<td style="text-align: right;">30</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Samfunn-/byutvikling</td>
+<td style="text-align: right;">27</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Kultur og frivillighet</td>
+<td style="text-align: right;">26</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Utdanning</td>
+<td style="text-align: right;">25</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Barnehage</td>
+<td style="text-align: right;">21</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Velferd, arbeid og integrering</td>
+<td style="text-align: right;">19</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Plan og bygning</td>
+<td style="text-align: right;">17</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Miljø og klima</td>
+<td style="text-align: right;">14</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Eiendom</td>
+<td style="text-align: right;">9</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Miljøteknisk</td>
+<td style="text-align: right;">9</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Annet</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Næring</td>
+<td style="text-align: right;">7</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</section>
+<section id="interkommunalt-samarbeid" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Interkommunalt samarbeid</h1>
+<section id="a.-samarbeider-kommunen-med-andre-kommuner" class="level3" data-number="5.0.1">
+<h3 data-number="5.0.1" class="anchored" data-anchor-id="a.-samarbeider-kommunen-med-andre-kommuner"><span class="header-section-number">5.0.1</span> 3a. Samarbeider kommunen med andre kommuner?</h3>
+<p><img src="kff_vestland_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="864"></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Svar</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">Prosent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">24</td>
+<td style="text-align: right;">66.7 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">33.3 %</td>
+</tr>
+</tbody>
+</table>
+<p><em>Grunnlag: n = 36 gyldige svar.</em></p>
+<div class="highchart html-widget html-fill-item" id="htmlwidget-32d269886154e48c5263" style="width:100%;height:397px;"></div>
+<script type="application/json" data-for="htmlwidget-32d269886154e48c5263">{"x":{"hc_opts":{"chart":{"reflow":true,"inverted":true},"title":{"text":"Områder det samarbeides om"},"yAxis":{"title":{"text":null}},"credits":{"enabled":false},"exporting":{"enabled":false},"boost":{"enabled":false},"plotOptions":{"series":{"label":{"enabled":false},"turboThreshold":0},"treemap":{"layoutAlgorithm":"squarified"}},"subtitle":{"text":"KFF"},"xAxis":{"categories":["Tilsyn","Folkehelsearbeid","Beredskap","Kommuneoverlegefunksjonen"],"title":{"text":" "}},"tooltip":{"useHTML":true,"shared":false,"headerFormat":"","pointFormat":"<span style=\"color:{point.color}\">●<\/span> <b>{point.name}<\/b><br/>Antall: <b>{point.y}<\/b>"},"series":[{"type":"column","name":"Antall","data":[{"name":"Tilsyn","y":16,"color":"#315975"},{"name":"Folkehelsearbeid","y":15,"color":"#315975"},{"name":"Beredskap","y":10,"color":"#315975"},{"name":"Kommuneoverlegefunksjonen","y":10,"color":"#315975"}],"showInLegend":false,"dataLabels":{"enabled":false}}]},"theme":{"colors":["#d35400","#2980b9","#2ecc71","#f1c40f","#2c3e50","#7f8c8d"],"chart":{"style":{"fontFamily":"Roboto","color":"#666666"}},"title":{"align":"left","style":{"fontFamily":"Roboto Condensed","fontWeight":"bold"}},"subtitle":{"align":"left","style":{"fontFamily":"Roboto Condensed"}},"legend":{"align":"right","verticalAlign":"bottom"},"xAxis":{"gridLineWidth":1,"gridLineColor":"#F3F3F3","lineColor":"#F3F3F3","minorGridLineColor":"#F3F3F3","tickColor":"#F3F3F3","tickWidth":1},"yAxis":{"gridLineColor":"#F3F3F3","lineColor":"#F3F3F3","minorGridLineColor":"#F3F3F3","tickColor":"#F3F3F3","tickWidth":1},"plotOptions":{"line":{"marker":{"enabled":false}},"spline":{"marker":{"enabled":false}},"area":{"marker":{"enabled":false}},"areaspline":{"marker":{"enabled":false}},"arearange":{"marker":{"enabled":false}},"bubble":{"maxSize":"10%"}}},"conf_opts":{"global":{"Date":null,"VMLRadialGradientURL":"http =//code.highcharts.com/list(version)/gfx/vml-radial-gradient.png","canvasToolsURL":"http =//code.highcharts.com/list(version)/modules/canvas-tools.js","getTimezoneOffset":null,"timezoneOffset":0,"useUTC":true},"lang":{"contextButtonTitle":"Chart context menu","decimalPoint":".","downloadCSV":"Download CSV","downloadJPEG":"Download JPEG image","downloadPDF":"Download PDF document","downloadPNG":"Download PNG image","downloadSVG":"Download SVG vector image","downloadXLS":"Download XLS","drillUpText":"◁ Back to {series.name}","exitFullscreen":"Exit from full screen","exportData":{"annotationHeader":"Annotations","categoryDatetimeHeader":"DateTime","categoryHeader":"Category"},"hideData":"Hide data table","invalidDate":null,"loading":"Loading...","months":["January","February","March","April","May","June","July","August","September","October","November","December"],"noData":"No data to display","numericSymbolMagnitude":1000,"numericSymbols":["k","M","G","T","P","E"],"printChart":"Print chart","resetZoom":"Reset zoom","resetZoomTitle":"Reset zoom level 1:1","shortMonths":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"shortWeekdays":["Sat","Sun","Mon","Tue","Wed","Thu","Fri"],"thousandsSep":" ","viewData":"View data table","viewFullscreen":"View in full screen","weekdays":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]}},"type":"chart","fonts":["Roboto","Roboto+Condensed"],"debug":false},"evals":[],"jsHooks":[]}</script>
+<table class="caption-top table">
+<caption>Områder det samarbeides om flere svar mulig</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Samarbeider om</th>
+<th style="text-align: right;">Antall kommuner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Folkehelsearbeid</td>
+<td style="text-align: right;">15</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Tilsyn</td>
+<td style="text-align: right;">16</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Beredskap</td>
+<td style="text-align: right;">10</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Kommuneoverlegefunksjonen</td>
+<td style="text-align: right;">10</td>
+</tr>
+</tbody>
+</table>
+<table class="caption-top table">
+<caption>Svarfordeling for q2_1_tot</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Samarbeidsområder (antall)</th>
+<th style="text-align: right;">Antall kommuner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">1</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">2</td>
+<td style="text-align: right;">7</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">3</td>
+<td style="text-align: right;">7</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4</td>
+<td style="text-align: right;">2</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="samarbeid-etter-kommunestørrelse-og-fylke" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="samarbeid-etter-kommunestørrelse-og-fylke"><span class="header-section-number">5.1</span> Samarbeid etter kommunestørrelse og fylke</h2>
+<p><img src="kff_vestland_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="864"></p>
+<table class="caption-top table">
+<caption>Samarbeider kommunen med andre etter kommunestørrelse</caption>
+<colgroup>
+<col style="width: 29%">
+<col style="width: 6%">
+<col style="width: 21%">
+<col style="width: 10%">
+<col style="width: 31%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">liten</th>
+<th style="text-align: left;">Svar</th>
+<th style="text-align: right;">Antall kommuner</th>
+<th style="text-align: right;">Prosent</th>
+<th style="text-align: right;">Gyldige svar i gruppen</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">&lt;5000 innbyggere</td>
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">64,7 %</td>
+<td style="text-align: right;">17</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">&lt;5000 innbyggere</td>
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">35,3 %</td>
+<td style="text-align: right;">17</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">&gt;=20000 innbyggere</td>
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">66,7 %</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">&gt;=20000 innbyggere</td>
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">33,3 %</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">5000-20000 innbyggere</td>
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">69,2 %</td>
+<td style="text-align: right;">13</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">5000-20000 innbyggere</td>
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">30,8 %</td>
+<td style="text-align: right;">13</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="største-folkehelseutfordringer-og-prioriterte-tiltak" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Største folkehelseutfordringer og prioriterte tiltak</h1>
+<div class="highchart html-widget html-fill-item" id="htmlwidget-d0c014a274831737b300" style="width:100%;height:397px;"></div>
+<script type="application/json" data-for="htmlwidget-d0c014a274831737b300">{"x":{"hc_opts":{"chart":{"reflow":true,"inverted":true},"title":{"text":"Største folkehelseutfordringer"},"yAxis":{"title":{"text":null}},"credits":{"enabled":false},"exporting":{"enabled":false},"boost":{"enabled":false},"plotOptions":{"series":{"label":{"enabled":false},"turboThreshold":0},"treemap":{"layoutAlgorithm":"squarified"}},"subtitle":{"text":"KFF"},"xAxis":{"categories":["Aldring av befolkningen","Psykisk helse og livskvalitet","Befolkningssammensetning","Fysisk aktivitet","Sosial ulikhet i helse","Utenforskap/ensomhet","Sosioøkonomiske forskjeller","Bolig","Ernæring/kosthold","Skole/utdanning","Tilknytning til arbeidsliv","Fysisk helse","Klima og miljø","Levekår","Rusmiddelbruk","Andre tema","Ikke identifisert eller ikke prioritert tiltak","Sosial støtte/deltagelse/mestring","Barnehage","Fritidstilbud","Opphoping av levekårsutfordringer","Nærmiljø","Skader","Tobakksbruk","Ulykker"],"title":{"text":" "}},"tooltip":{"useHTML":true,"shared":false,"headerFormat":"","pointFormat":"<span style=\"color:{point.color}\">●<\/span> <b>{point.name}<\/b><br/>Antall: <b>{point.y}<\/b>"},"series":[{"type":"column","name":"Antall","data":[{"name":"Aldring av befolkningen","y":24,"color":"#315975"},{"name":"Psykisk helse og livskvalitet","y":21,"color":"#315975"},{"name":"Befolkningssammensetning","y":16,"color":"#315975"},{"name":"Fysisk aktivitet","y":12,"color":"#315975"},{"name":"Sosial ulikhet i helse","y":11,"color":"#315975"},{"name":"Utenforskap/ensomhet","y":11,"color":"#315975"},{"name":"Sosioøkonomiske forskjeller","y":9,"color":"#315975"},{"name":"Bolig","y":8,"color":"#315975"},{"name":"Ernæring/kosthold","y":7,"color":"#315975"},{"name":"Skole/utdanning","y":7,"color":"#315975"},{"name":"Tilknytning til arbeidsliv","y":7,"color":"#315975"},{"name":"Fysisk helse","y":4,"color":"#315975"},{"name":"Klima og miljø","y":3,"color":"#315975"},{"name":"Levekår","y":3,"color":"#315975"},{"name":"Rusmiddelbruk","y":3,"color":"#315975"},{"name":"Andre tema","y":2,"color":"#315975"},{"name":"Ikke identifisert eller ikke prioritert tiltak","y":2,"color":"#315975"},{"name":"Sosial støtte/deltagelse/mestring","y":2,"color":"#315975"},{"name":"Barnehage","y":1,"color":"#315975"},{"name":"Fritidstilbud","y":1,"color":"#315975"},{"name":"Opphoping av levekårsutfordringer","y":1,"color":"#315975"},{"name":"Nærmiljø","y":0,"color":"#315975"},{"name":"Skader","y":0,"color":"#315975"},{"name":"Tobakksbruk","y":0,"color":"#315975"},{"name":"Ulykker","y":0,"color":"#315975"}],"showInLegend":false,"dataLabels":{"enabled":false}}]},"theme":{"colors":["#d35400","#2980b9","#2ecc71","#f1c40f","#2c3e50","#7f8c8d"],"chart":{"style":{"fontFamily":"Roboto","color":"#666666"}},"title":{"align":"left","style":{"fontFamily":"Roboto Condensed","fontWeight":"bold"}},"subtitle":{"align":"left","style":{"fontFamily":"Roboto Condensed"}},"legend":{"align":"right","verticalAlign":"bottom"},"xAxis":{"gridLineWidth":1,"gridLineColor":"#F3F3F3","lineColor":"#F3F3F3","minorGridLineColor":"#F3F3F3","tickColor":"#F3F3F3","tickWidth":1},"yAxis":{"gridLineColor":"#F3F3F3","lineColor":"#F3F3F3","minorGridLineColor":"#F3F3F3","tickColor":"#F3F3F3","tickWidth":1},"plotOptions":{"line":{"marker":{"enabled":false}},"spline":{"marker":{"enabled":false}},"area":{"marker":{"enabled":false}},"areaspline":{"marker":{"enabled":false}},"arearange":{"marker":{"enabled":false}},"bubble":{"maxSize":"10%"}}},"conf_opts":{"global":{"Date":null,"VMLRadialGradientURL":"http =//code.highcharts.com/list(version)/gfx/vml-radial-gradient.png","canvasToolsURL":"http =//code.highcharts.com/list(version)/modules/canvas-tools.js","getTimezoneOffset":null,"timezoneOffset":0,"useUTC":true},"lang":{"contextButtonTitle":"Chart context menu","decimalPoint":".","downloadCSV":"Download CSV","downloadJPEG":"Download JPEG image","downloadPDF":"Download PDF document","downloadPNG":"Download PNG image","downloadSVG":"Download SVG vector image","downloadXLS":"Download XLS","drillUpText":"◁ Back to {series.name}","exitFullscreen":"Exit from full screen","exportData":{"annotationHeader":"Annotations","categoryDatetimeHeader":"DateTime","categoryHeader":"Category"},"hideData":"Hide data table","invalidDate":null,"loading":"Loading...","months":["January","February","March","April","May","June","July","August","September","October","November","December"],"noData":"No data to display","numericSymbolMagnitude":1000,"numericSymbols":["k","M","G","T","P","E"],"printChart":"Print chart","resetZoom":"Reset zoom","resetZoomTitle":"Reset zoom level 1:1","shortMonths":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"shortWeekdays":["Sat","Sun","Mon","Tue","Wed","Thu","Fri"],"thousandsSep":" ","viewData":"View data table","viewFullscreen":"View in full screen","weekdays":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]}},"type":"chart","fonts":["Roboto","Roboto+Condensed"],"debug":false},"evals":[],"jsHooks":[]}</script>
+<table class="caption-top table">
+<caption>Kommunenes største folkehelseutfordringer(inntil fem svar, med maksimalt to helsetilstandsalternativer)</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Hovedutfordringer</th>
+<th style="text-align: right;">Antall kommuner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Aldring av befolkningen</td>
+<td style="text-align: right;">24</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Psykisk helse og livskvalitet</td>
+<td style="text-align: right;">21</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Befolkningssammensetning</td>
+<td style="text-align: right;">16</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Fysisk aktivitet</td>
+<td style="text-align: right;">12</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Sosial ulikhet i helse</td>
+<td style="text-align: right;">11</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Utenforskap/ensomhet</td>
+<td style="text-align: right;">11</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Sosioøkonomiske forskjeller</td>
+<td style="text-align: right;">9</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Bolig</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Ernæring/kosthold</td>
+<td style="text-align: right;">7</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Skole/utdanning</td>
+<td style="text-align: right;">7</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Tilknytning til arbeidsliv</td>
+<td style="text-align: right;">7</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Fysisk helse</td>
+<td style="text-align: right;">4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Klima og miljø</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Levekår</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Rusmiddelbruk</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Andre tema</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Ikke identifisert eller ikke prioritert tiltak</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sosial støtte/deltagelse/mestring</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Barnehage</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Fritidstilbud</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Opphoping av levekårsutfordringer</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Nærmiljø</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Skader</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Tobakksbruk</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Ulykker</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+<div class="highchart html-widget html-fill-item" id="htmlwidget-4ea8007435533074a101" style="width:100%;height:397px;"></div>
+<script type="application/json" data-for="htmlwidget-4ea8007435533074a101">{"x":{"hc_opts":{"chart":{"reflow":true,"inverted":true},"title":{"text":"Områder med prioriterte tiltak"},"yAxis":{"title":{"text":null}},"credits":{"enabled":false},"exporting":{"enabled":false},"boost":{"enabled":false},"plotOptions":{"series":{"label":{"enabled":false},"turboThreshold":0},"treemap":{"layoutAlgorithm":"squarified"}},"subtitle":{"text":"KFF"},"xAxis":{"categories":["Psykisk helse og livskvalitet","Aldring av befolkningen","Utenforskap/ensomhet","Fritidstilbud","Befolkningssammensetning","Fysisk aktivitet","Skole/utdanning","Sosial støtte/deltagelse/mestring","Sosial ulikhet i helse","Bolig","Ernæring/kosthold","Sosioøkonomiske forskjeller","Ikke identifisert eller ikke prioritert tiltak","Rusmiddelbruk","Tilknytning til arbeidsliv","Barnehage","Fysisk helse","Klima og miljø","Levekår","Nærmiljø","Opphoping av levekårsutfordringer","Ulykker","Andre tema","Skader","Tobakksbruk"],"title":{"text":" "}},"tooltip":{"useHTML":true,"shared":false,"headerFormat":"","pointFormat":"<span style=\"color:{point.color}\">●<\/span> <b>{point.name}<\/b><br/>Antall: <b>{point.y}<\/b>"},"series":[{"type":"column","name":"Antall","data":[{"name":"Psykisk helse og livskvalitet","y":23,"color":"#315975"},{"name":"Aldring av befolkningen","y":17,"color":"#315975"},{"name":"Utenforskap/ensomhet","y":11,"color":"#315975"},{"name":"Fritidstilbud","y":10,"color":"#315975"},{"name":"Befolkningssammensetning","y":9,"color":"#315975"},{"name":"Fysisk aktivitet","y":9,"color":"#315975"},{"name":"Skole/utdanning","y":9,"color":"#315975"},{"name":"Sosial støtte/deltagelse/mestring","y":8,"color":"#315975"},{"name":"Sosial ulikhet i helse","y":7,"color":"#315975"},{"name":"Bolig","y":5,"color":"#315975"},{"name":"Ernæring/kosthold","y":5,"color":"#315975"},{"name":"Sosioøkonomiske forskjeller","y":4,"color":"#315975"},{"name":"Ikke identifisert eller ikke prioritert tiltak","y":3,"color":"#315975"},{"name":"Rusmiddelbruk","y":3,"color":"#315975"},{"name":"Tilknytning til arbeidsliv","y":3,"color":"#315975"},{"name":"Barnehage","y":2,"color":"#315975"},{"name":"Fysisk helse","y":2,"color":"#315975"},{"name":"Klima og miljø","y":2,"color":"#315975"},{"name":"Levekår","y":2,"color":"#315975"},{"name":"Nærmiljø","y":2,"color":"#315975"},{"name":"Opphoping av levekårsutfordringer","y":1,"color":"#315975"},{"name":"Ulykker","y":1,"color":"#315975"},{"name":"Andre tema","y":0,"color":"#315975"},{"name":"Skader","y":0,"color":"#315975"},{"name":"Tobakksbruk","y":0,"color":"#315975"}],"showInLegend":false,"dataLabels":{"enabled":false}}]},"theme":{"colors":["#d35400","#2980b9","#2ecc71","#f1c40f","#2c3e50","#7f8c8d"],"chart":{"style":{"fontFamily":"Roboto","color":"#666666"}},"title":{"align":"left","style":{"fontFamily":"Roboto Condensed","fontWeight":"bold"}},"subtitle":{"align":"left","style":{"fontFamily":"Roboto Condensed"}},"legend":{"align":"right","verticalAlign":"bottom"},"xAxis":{"gridLineWidth":1,"gridLineColor":"#F3F3F3","lineColor":"#F3F3F3","minorGridLineColor":"#F3F3F3","tickColor":"#F3F3F3","tickWidth":1},"yAxis":{"gridLineColor":"#F3F3F3","lineColor":"#F3F3F3","minorGridLineColor":"#F3F3F3","tickColor":"#F3F3F3","tickWidth":1},"plotOptions":{"line":{"marker":{"enabled":false}},"spline":{"marker":{"enabled":false}},"area":{"marker":{"enabled":false}},"areaspline":{"marker":{"enabled":false}},"arearange":{"marker":{"enabled":false}},"bubble":{"maxSize":"10%"}}},"conf_opts":{"global":{"Date":null,"VMLRadialGradientURL":"http =//code.highcharts.com/list(version)/gfx/vml-radial-gradient.png","canvasToolsURL":"http =//code.highcharts.com/list(version)/modules/canvas-tools.js","getTimezoneOffset":null,"timezoneOffset":0,"useUTC":true},"lang":{"contextButtonTitle":"Chart context menu","decimalPoint":".","downloadCSV":"Download CSV","downloadJPEG":"Download JPEG image","downloadPDF":"Download PDF document","downloadPNG":"Download PNG image","downloadSVG":"Download SVG vector image","downloadXLS":"Download XLS","drillUpText":"◁ Back to {series.name}","exitFullscreen":"Exit from full screen","exportData":{"annotationHeader":"Annotations","categoryDatetimeHeader":"DateTime","categoryHeader":"Category"},"hideData":"Hide data table","invalidDate":null,"loading":"Loading...","months":["January","February","March","April","May","June","July","August","September","October","November","December"],"noData":"No data to display","numericSymbolMagnitude":1000,"numericSymbols":["k","M","G","T","P","E"],"printChart":"Print chart","resetZoom":"Reset zoom","resetZoomTitle":"Reset zoom level 1:1","shortMonths":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"shortWeekdays":["Sat","Sun","Mon","Tue","Wed","Thu","Fri"],"thousandsSep":" ","viewData":"View data table","viewFullscreen":"View in full screen","weekdays":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]}},"type":"chart","fonts":["Roboto","Roboto+Condensed"],"debug":false},"evals":[],"jsHooks":[]}</script>
+<table class="caption-top table">
+<caption>Områder der tiltak er prioritert(inntil fem svar, med maksimalt to helsetilstandsalternativer)</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Prioriterte tiltak</th>
+<th style="text-align: right;">Antall kommuner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Psykisk helse og livskvalitet</td>
+<td style="text-align: right;">23</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Aldring av befolkningen</td>
+<td style="text-align: right;">17</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Utenforskap/ensomhet</td>
+<td style="text-align: right;">11</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Fritidstilbud</td>
+<td style="text-align: right;">10</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Befolkningssammensetning</td>
+<td style="text-align: right;">9</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Fysisk aktivitet</td>
+<td style="text-align: right;">9</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Skole/utdanning</td>
+<td style="text-align: right;">9</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sosial støtte/deltagelse/mestring</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Sosial ulikhet i helse</td>
+<td style="text-align: right;">7</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Bolig</td>
+<td style="text-align: right;">5</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Ernæring/kosthold</td>
+<td style="text-align: right;">5</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sosioøkonomiske forskjeller</td>
+<td style="text-align: right;">4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Ikke identifisert eller ikke prioritert tiltak</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Rusmiddelbruk</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Tilknytning til arbeidsliv</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Barnehage</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Fysisk helse</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Klima og miljø</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Levekår</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Nærmiljø</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Opphoping av levekårsutfordringer</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Ulykker</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Andre tema</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Skader</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Tobakksbruk</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="planstrategi-og-planer" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Planstrategi og planer</h1>
+<section id="er-hovedutfordringene-drøftet-i-kommunal-planstrategi" class="level3" data-number="7.0.1">
+<h3 data-number="7.0.1" class="anchored" data-anchor-id="er-hovedutfordringene-drøftet-i-kommunal-planstrategi"><span class="header-section-number">7.0.1</span> 5. Er hovedutfordringene drøftet i kommunal planstrategi?</h3>
+<p><img src="kff_vestland_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="864"></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Svar</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">Prosent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">31</td>
+<td style="text-align: right;">86.1 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">8.3 %</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Vet ikke</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">5.6 %</td>
+</tr>
+</tbody>
+</table>
+<p><em>Grunnlag: n = 36 gyldige svar.</em></p>
+</section>
+<section id="har-utfordringene-påvirket-prioritering-eller-utarbeiding-av-planer" class="level3" data-number="7.0.2">
+<h3 data-number="7.0.2" class="anchored" data-anchor-id="har-utfordringene-påvirket-prioritering-eller-utarbeiding-av-planer"><span class="header-section-number">7.0.2</span> 6. Har utfordringene påvirket prioritering eller utarbeiding av planer?</h3>
+<p><img src="kff_vestland_files/figure-html/unnamed-chunk-8-2.png" class="img-fluid" width="864"></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Svar</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">Prosent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">28</td>
+<td style="text-align: right;">90.3 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Vet ikke</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">6.5 %</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3.2 %</td>
+</tr>
+</tbody>
+</table>
+<p><em>Grunnlag: n = 31 gyldige svar.</em></p>
+</section>
+<section id="er-hovedutfordringene-drøftet-i-kommunal-planstrategi-etter-landsdel-og-kommunestørrelse" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="er-hovedutfordringene-drøftet-i-kommunal-planstrategi-etter-landsdel-og-kommunestørrelse"><span class="header-section-number">7.1</span> Er hovedutfordringene drøftet i kommunal planstrategi? Etter landsdel og kommunestørrelse</h2>
+<p><img src="kff_vestland_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid" width="864"></p>
+<table class="caption-top table">
+<caption>Er hovedutfordringene drøftet i kommunal planstrategi? helsetilstanden og påvirkningsfaktorer, etter kommunestørrelse</caption>
+<colgroup>
+<col style="width: 28%">
+<col style="width: 11%">
+<col style="width: 20%">
+<col style="width: 10%">
+<col style="width: 29%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">liten</th>
+<th style="text-align: left;">Svar</th>
+<th style="text-align: right;">Antall kommuner</th>
+<th style="text-align: right;">Prosent</th>
+<th style="text-align: right;">Gyldige svar i gruppen</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">&lt;5000 innbyggere</td>
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">13</td>
+<td style="text-align: right;">76,5 %</td>
+<td style="text-align: right;">17</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">&lt;5000 innbyggere</td>
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">11,8 %</td>
+<td style="text-align: right;">17</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">&lt;5000 innbyggere</td>
+<td style="text-align: left;">Vet ikke</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">11,8 %</td>
+<td style="text-align: right;">17</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">&gt;=20000 innbyggere</td>
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">100,0 %</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">&gt;=20000 innbyggere</td>
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0,0 %</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">&gt;=20000 innbyggere</td>
+<td style="text-align: left;">Vet ikke</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0,0 %</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">5000-20000 innbyggere</td>
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">92,3 %</td>
+<td style="text-align: right;">13</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">5000-20000 innbyggere</td>
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">7,7 %</td>
+<td style="text-align: right;">13</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">5000-20000 innbyggere</td>
+<td style="text-align: left;">Vet ikke</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0,0 %</td>
+<td style="text-align: right;">13</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="planer-hvor-kommunen-har-fastsatt-mål-og-strategier-som-svar-på-folkehelseutfordringene" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="planer-hvor-kommunen-har-fastsatt-mål-og-strategier-som-svar-på-folkehelseutfordringene"><span class="header-section-number">7.2</span> Planer hvor kommunen har fastsatt mål og strategier som svar på folkehelseutfordringene</h2>
+<table class="caption-top table">
+<caption>Planer med mål og strategier for folkehelseutfordringene. flere kryss mulig</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Plan / strategi</th>
+<th style="text-align: right;">Antall kommuner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Kommuneplanens samfunnsdel</td>
+<td style="text-align: right;">32</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Planer for oppvekst</td>
+<td style="text-align: right;">18</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Planer innen helse/sosial</td>
+<td style="text-align: right;">18</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Planer for kultur</td>
+<td style="text-align: right;">15</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Forebyggende plan i barnevernsloven</td>
+<td style="text-align: right;">12</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Økonomiplan/handlingsprogram</td>
+<td style="text-align: right;">11</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Planer for frivillighet</td>
+<td style="text-align: right;">10</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Alkoholpolitisk handlingsplan</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Kommuneplanens arealdel</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Egen plan for folkehelse</td>
+<td style="text-align: right;">4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Planer for utdanning</td>
+<td style="text-align: right;">4</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Andre temaområder</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Planer for by-/nærmiljø-/arealutvikling</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Ingen av disse</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Planer for miljø og klima</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Planer for næringsutvikling</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="samiske-folkehelseutfordringer" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Samiske folkehelseutfordringer</h1>
+<section id="a.-oppmerksomhet-på-særskilte-folkehelseutfordringer-i-den-samiske-befolkningen" class="level3" data-number="8.0.1">
+<h3 data-number="8.0.1" class="anchored" data-anchor-id="a.-oppmerksomhet-på-særskilte-folkehelseutfordringer-i-den-samiske-befolkningen"><span class="header-section-number">8.0.1</span> 7a. Oppmerksomhet på særskilte folkehelseutfordringer i den samiske befolkningen</h3>
+<p><img src="kff_vestland_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="864"></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Svar</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">Prosent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Ikke aktuelt</td>
+<td style="text-align: right;">28</td>
+<td style="text-align: right;">77.8 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">11.1 %</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Vet ikke</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">8.3 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2.8 %</td>
+</tr>
+</tbody>
+</table>
+<p><em>Grunnlag: n = 36 gyldige svar.</em></p>
+<p>character(0)</p>
+<p>Antall utfylte fritekstsvar blant kommuner i filteret: <strong>1</strong>.</p>
+<blockquote class="blockquote">
+<p>Rå fritekst bør ikke publiseres ukritisk. Konkrete beskrivelser kan identifisere kommune eller enkeltperson.</p>
+</blockquote>
+</section>
+</section>
+<section id="evaluering-læring-og-forbedring" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> Evaluering, læring og forbedring</h1>
+<section id="a.-har-kommunen-gjennomgått-og-vurdert-folkehelsearbeidet-i-fireårsperioden" class="level3" data-number="9.0.1">
+<h3 data-number="9.0.1" class="anchored" data-anchor-id="a.-har-kommunen-gjennomgått-og-vurdert-folkehelsearbeidet-i-fireårsperioden"><span class="header-section-number">9.0.1</span> 9a. Har kommunen gjennomgått og vurdert folkehelsearbeidet i fireårsperioden?</h3>
+<p><img src="kff_vestland_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="864"></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Svar</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">Prosent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">44.4 %</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">14</td>
+<td style="text-align: right;">38.9 %</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Vet ikke</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">16.7 %</td>
+</tr>
+</tbody>
+</table>
+<p><em>Grunnlag: n = 36 gyldige svar.</em></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Fritekst</th>
+<th style="text-align: right;">Variabel</th>
+<th style="text-align: right;">n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">9b. Forbedringsområder</td>
+<td style="text-align: right;">q21b</td>
+<td style="text-align: right;">12</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">9c. Bruk av erfaringer i neste fireårssyklus</td>
+<td style="text-align: right;">q21b_1</td>
+<td style="text-align: right;">10</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="blockquote">
+<p>Fritekstsvar bør kodes tematisk i en separat, dokumentert analyse. Rapportér temaer med antall kommuner og anonymiser eventuelle sitater.</p>
+</blockquote>
+</section>
+<section id="etter-landsdel-og-kommunestørrelse" class="level2" data-number="9.1">
+<h2 data-number="9.1" class="anchored" data-anchor-id="etter-landsdel-og-kommunestørrelse"><span class="header-section-number">9.1</span> Etter landsdel og kommunestørrelse</h2>
+<p><img src="kff_vestland_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="864"></p>
+<table class="caption-top table">
+<caption>Har kommunen gjennomgått og vurdert folkehelsearbeidet i fireårsperioden? etter kommunestørrelse</caption>
+<colgroup>
+<col style="width: 28%">
+<col style="width: 11%">
+<col style="width: 20%">
+<col style="width: 10%">
+<col style="width: 29%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">liten</th>
+<th style="text-align: left;">Svar</th>
+<th style="text-align: right;">Antall kommuner</th>
+<th style="text-align: right;">Prosent</th>
+<th style="text-align: right;">Gyldige svar i gruppen</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">&lt;5000 innbyggere</td>
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">41,2 %</td>
+<td style="text-align: right;">17</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">&lt;5000 innbyggere</td>
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">41,2 %</td>
+<td style="text-align: right;">17</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">&lt;5000 innbyggere</td>
+<td style="text-align: left;">Vet ikke</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">17,6 %</td>
+<td style="text-align: right;">17</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">&gt;=20000 innbyggere</td>
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">33,3 %</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">&gt;=20000 innbyggere</td>
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">50,0 %</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">&gt;=20000 innbyggere</td>
+<td style="text-align: left;">Vet ikke</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">16,7 %</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">5000-20000 innbyggere</td>
+<td style="text-align: left;">Ja</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">38,5 %</td>
+<td style="text-align: right;">13</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">5000-20000 innbyggere</td>
+<td style="text-align: left;">Nei</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">46,2 %</td>
+<td style="text-align: right;">13</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">5000-20000 innbyggere</td>
+<td style="text-align: left;">Vet ikke</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">15,4 %</td>
+<td style="text-align: right;">13</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="barrierer-og-utfordringer" class="level1" data-number="10">
+<h1 data-number="10"><span class="header-section-number">10</span> Barrierer og utfordringer</h1>
+<div class="highchart html-widget html-fill-item" id="htmlwidget-19d45110c59d838a7236" style="width:100%;height:397px;"></div>
+<script type="application/json" data-for="htmlwidget-19d45110c59d838a7236">{"x":{"hc_opts":{"chart":{"reflow":true,"inverted":true},"title":{"text":"Barrierer for systematisk folkehelsearbeid"},"yAxis":{"title":{"text":null}},"credits":{"enabled":false},"exporting":{"enabled":false},"boost":{"enabled":false},"plotOptions":{"series":{"label":{"enabled":false},"turboThreshold":0},"treemap":{"layoutAlgorithm":"squarified"}},"subtitle":{"text":"KFF"},"xAxis":{"categories":["Kapasitet og personellressurser","Organisering og samordning","Forankring","Prioritering fra ledelsen","Kompetanse","Annet"],"title":{"text":" "}},"tooltip":{"useHTML":true,"shared":false,"headerFormat":"","pointFormat":"<span style=\"color:{point.color}\">●<\/span> <b>{point.name}<\/b><br/>Antall: <b>{point.y}<\/b>"},"series":[{"type":"column","name":"Antall","data":[{"name":"Kapasitet og personellressurser","y":26,"color":"#315975"},{"name":"Organisering og samordning","y":22,"color":"#315975"},{"name":"Forankring","y":11,"color":"#315975"},{"name":"Prioritering fra ledelsen","y":10,"color":"#315975"},{"name":"Kompetanse","y":5,"color":"#315975"},{"name":"Annet","y":4,"color":"#315975"}],"showInLegend":false,"dataLabels":{"enabled":false}}]},"theme":{"colors":["#d35400","#2980b9","#2ecc71","#f1c40f","#2c3e50","#7f8c8d"],"chart":{"style":{"fontFamily":"Roboto","color":"#666666"}},"title":{"align":"left","style":{"fontFamily":"Roboto Condensed","fontWeight":"bold"}},"subtitle":{"align":"left","style":{"fontFamily":"Roboto Condensed"}},"legend":{"align":"right","verticalAlign":"bottom"},"xAxis":{"gridLineWidth":1,"gridLineColor":"#F3F3F3","lineColor":"#F3F3F3","minorGridLineColor":"#F3F3F3","tickColor":"#F3F3F3","tickWidth":1},"yAxis":{"gridLineColor":"#F3F3F3","lineColor":"#F3F3F3","minorGridLineColor":"#F3F3F3","tickColor":"#F3F3F3","tickWidth":1},"plotOptions":{"line":{"marker":{"enabled":false}},"spline":{"marker":{"enabled":false}},"area":{"marker":{"enabled":false}},"areaspline":{"marker":{"enabled":false}},"arearange":{"marker":{"enabled":false}},"bubble":{"maxSize":"10%"}}},"conf_opts":{"global":{"Date":null,"VMLRadialGradientURL":"http =//code.highcharts.com/list(version)/gfx/vml-radial-gradient.png","canvasToolsURL":"http =//code.highcharts.com/list(version)/modules/canvas-tools.js","getTimezoneOffset":null,"timezoneOffset":0,"useUTC":true},"lang":{"contextButtonTitle":"Chart context menu","decimalPoint":".","downloadCSV":"Download CSV","downloadJPEG":"Download JPEG image","downloadPDF":"Download PDF document","downloadPNG":"Download PNG image","downloadSVG":"Download SVG vector image","downloadXLS":"Download XLS","drillUpText":"◁ Back to {series.name}","exitFullscreen":"Exit from full screen","exportData":{"annotationHeader":"Annotations","categoryDatetimeHeader":"DateTime","categoryHeader":"Category"},"hideData":"Hide data table","invalidDate":null,"loading":"Loading...","months":["January","February","March","April","May","June","July","August","September","October","November","December"],"noData":"No data to display","numericSymbolMagnitude":1000,"numericSymbols":["k","M","G","T","P","E"],"printChart":"Print chart","resetZoom":"Reset zoom","resetZoomTitle":"Reset zoom level 1:1","shortMonths":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"shortWeekdays":["Sat","Sun","Mon","Tue","Wed","Thu","Fri"],"thousandsSep":" ","viewData":"View data table","viewFullscreen":"View in full screen","weekdays":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]}},"type":"chart","fonts":["Roboto","Roboto+Condensed"],"debug":false},"evals":[],"jsHooks":[]}</script>
+<table class="caption-top table">
+<caption>Barrierer for systematisk folkehelsearbeid</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Barriere/utfordring</th>
+<th style="text-align: right;">Antall kommuner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Kapasitet og personellressurser</td>
+<td style="text-align: right;">26</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Organisering og samordning</td>
+<td style="text-align: right;">22</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Forankring</td>
+<td style="text-align: right;">11</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Prioritering fra ledelsen</td>
+<td style="text-align: right;">10</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Kompetanse</td>
+<td style="text-align: right;">5</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Annet</td>
+<td style="text-align: right;">4</td>
+</tr>
+</tbody>
+</table>
+<table class="caption-top table">
+<caption>Svarfordeling for q10a_tot</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">barrierer systematisk folkehelsearbeid (antall)</th>
+<th style="text-align: right;">Antall kommuner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">1</td>
+<td style="text-align: right;">12</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">2</td>
+<td style="text-align: right;">12</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">3</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">5</td>
+<td style="text-align: right;">2</td>
+</tr>
+</tbody>
+</table>
+<div class="highchart html-widget html-fill-item" id="htmlwidget-c9fafca1d615aa0abcb0" style="width:100%;height:397px;"></div>
+<script type="application/json" data-for="htmlwidget-c9fafca1d615aa0abcb0">{"x":{"hc_opts":{"chart":{"reflow":true,"inverted":true},"title":{"text":"Barrierer for kunnskapsbasert og langsiktig folkehelsearbeid"},"yAxis":{"title":{"text":null}},"credits":{"enabled":false},"exporting":{"enabled":false},"boost":{"enabled":false},"plotOptions":{"series":{"label":{"enabled":false},"turboThreshold":0},"treemap":{"layoutAlgorithm":"squarified"}},"subtitle":{"text":"KFF"},"xAxis":{"categories":["Kapasitet og personellressurser","Organisering og samordning","Forankring","Kompetanse","Prioritering fra ledelsen","Annet"],"title":{"text":" "}},"tooltip":{"useHTML":true,"shared":false,"headerFormat":"","pointFormat":"<span style=\"color:{point.color}\">●<\/span> <b>{point.name}<\/b><br/>Antall: <b>{point.y}<\/b>"},"series":[{"type":"column","name":"Antall","data":[{"name":"Kapasitet og personellressurser","y":23,"color":"#315975"},{"name":"Organisering og samordning","y":20,"color":"#315975"},{"name":"Forankring","y":11,"color":"#315975"},{"name":"Kompetanse","y":8,"color":"#315975"},{"name":"Prioritering fra ledelsen","y":8,"color":"#315975"},{"name":"Annet","y":4,"color":"#315975"}],"showInLegend":false,"dataLabels":{"enabled":false}}]},"theme":{"colors":["#d35400","#2980b9","#2ecc71","#f1c40f","#2c3e50","#7f8c8d"],"chart":{"style":{"fontFamily":"Roboto","color":"#666666"}},"title":{"align":"left","style":{"fontFamily":"Roboto Condensed","fontWeight":"bold"}},"subtitle":{"align":"left","style":{"fontFamily":"Roboto Condensed"}},"legend":{"align":"right","verticalAlign":"bottom"},"xAxis":{"gridLineWidth":1,"gridLineColor":"#F3F3F3","lineColor":"#F3F3F3","minorGridLineColor":"#F3F3F3","tickColor":"#F3F3F3","tickWidth":1},"yAxis":{"gridLineColor":"#F3F3F3","lineColor":"#F3F3F3","minorGridLineColor":"#F3F3F3","tickColor":"#F3F3F3","tickWidth":1},"plotOptions":{"line":{"marker":{"enabled":false}},"spline":{"marker":{"enabled":false}},"area":{"marker":{"enabled":false}},"areaspline":{"marker":{"enabled":false}},"arearange":{"marker":{"enabled":false}},"bubble":{"maxSize":"10%"}}},"conf_opts":{"global":{"Date":null,"VMLRadialGradientURL":"http =//code.highcharts.com/list(version)/gfx/vml-radial-gradient.png","canvasToolsURL":"http =//code.highcharts.com/list(version)/modules/canvas-tools.js","getTimezoneOffset":null,"timezoneOffset":0,"useUTC":true},"lang":{"contextButtonTitle":"Chart context menu","decimalPoint":".","downloadCSV":"Download CSV","downloadJPEG":"Download JPEG image","downloadPDF":"Download PDF document","downloadPNG":"Download PNG image","downloadSVG":"Download SVG vector image","downloadXLS":"Download XLS","drillUpText":"◁ Back to {series.name}","exitFullscreen":"Exit from full screen","exportData":{"annotationHeader":"Annotations","categoryDatetimeHeader":"DateTime","categoryHeader":"Category"},"hideData":"Hide data table","invalidDate":null,"loading":"Loading...","months":["January","February","March","April","May","June","July","August","September","October","November","December"],"noData":"No data to display","numericSymbolMagnitude":1000,"numericSymbols":["k","M","G","T","P","E"],"printChart":"Print chart","resetZoom":"Reset zoom","resetZoomTitle":"Reset zoom level 1:1","shortMonths":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"shortWeekdays":["Sat","Sun","Mon","Tue","Wed","Thu","Fri"],"thousandsSep":" ","viewData":"View data table","viewFullscreen":"View in full screen","weekdays":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]}},"type":"chart","fonts":["Roboto","Roboto+Condensed"],"debug":false},"evals":[],"jsHooks":[]}</script>
+<table class="caption-top table">
+<caption>Barrierer for kunnskapsbasert og langsiktig folkehelsearbeid</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Barriere/utfordring</th>
+<th style="text-align: right;">Antall kommuner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Kapasitet og personellressurser</td>
+<td style="text-align: right;">23</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Organisering og samordning</td>
+<td style="text-align: right;">20</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Forankring</td>
+<td style="text-align: right;">11</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Kompetanse</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Prioritering fra ledelsen</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Annet</td>
+<td style="text-align: right;">4</td>
+</tr>
+</tbody>
+</table>
+<table class="caption-top table">
+<caption>Svarfordeling for q10b_tot</caption>
+<colgroup>
+<col style="width: 77%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">barrierer jobbe kunnskapsbasert og langsiktig (antall)</th>
+<th style="text-align: right;">Antall kommuner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">1</td>
+<td style="text-align: right;">15</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">2</td>
+<td style="text-align: right;">11</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">3</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">5</td>
+<td style="text-align: right;">3</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="blockquote">
+<p>Undergruppeforskjeller er deskriptive og bør ikke tolkes kausalt. Små grupper gir stor tilfeldig usikkerhet.</p>
+</blockquote>
+</section>
+<section id="datakvalitet-og-kontroll" class="level1" data-number="11">
+<h1 data-number="11"><span class="header-section-number">11</span> Datakvalitet og kontroll</h1>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>
+
+|Kontroll              | Antall|
+|:---------------------|------:|
+|duplikate_kommuner    |      0|
+|ugyldig_kommunenummer |      0|
+|mangler_fylke         |      0|
+|mangler_landsdel      |      0|
+|mangler_folketall     |      0|</code></pre>
+</div>
+</div>
+<section id="filterkontroller" class="level2" data-number="11.1">
+<h2 data-number="11.1" class="anchored" data-anchor-id="filterkontroller"><span class="header-section-number">11.1</span> Filterkontroller</h2>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>
+
+|Kontroll                                   | Antall|
+|:------------------------------------------|------:|
+|Spørsmål 2 besvart uten gyldig svar på 1b  |      0|
+|Spørsmål 3b besvart uten Ja på 3a          |      0|
+|Spørsmål 6 besvart uten Ja på 5            |      0|
+|Spørsmål 7b besvart uten Ja på 7a          |      0|
+|Spørsmål 9b eller 9c besvart uten Ja på 9a |      0|</code></pre>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Kopiert!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Kopiert!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
